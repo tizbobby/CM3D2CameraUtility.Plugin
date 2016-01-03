@@ -381,20 +381,21 @@ namespace CM3D2CameraUtility
                                 oldTargetPos = cameraTargetPosFromScript;
                             }
 
-                            Vector3 CameraPos = manHead.transform.position + manHead.transform.up * fpsOffsetUp + manHead.transform.right * fpsOffsetRight + manHead.transform.forward * fpsOffsetForward;
+                            Vector3 cameraPos = manHead.transform.position
+                                + manHead.transform.up * fpsOffsetUp
+                                + manHead.transform.right * fpsOffsetRight
+                                + manHead.transform.forward * fpsOffsetForward;
                             if (bFpsShakeCorrection)
                             {
-                                cameraOffset = Vector3.Lerp(CameraPos, cameraOffset, 0.9f);
-                                mainCamera.SetPos(cameraOffset);
-                                mainCamera.SetTargetPos(cameraOffset, true);
-                                mainCamera.SetDistance(0f, true);
+                                cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
                             }
                             else
                             {
-                                mainCamera.SetPos(CameraPos);
-                                mainCamera.SetTargetPos(CameraPos, true);
-                                mainCamera.SetDistance(0f, true);
+                                cameraOffset = cameraPos;
                             }
+                            mainCamera.SetPos(cameraOffset);
+                            mainCamera.SetTargetPos(cameraOffset, true);
+                            mainCamera.SetDistance(0f, true);
                         }
                     }
                 }
