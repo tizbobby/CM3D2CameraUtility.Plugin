@@ -1,5 +1,30 @@
-﻿// CM3D2CameraUtility.Plugin v2.0.1.2 改変（非公式)
+﻿// CM3D2CameraUtility.Plugin v2.0.1.2 改変の改変（非公式)
+// 改変元 したらば改造スレその5 >>693
+// http://pastebin.com/NxzuFaUe
+
+// 20160103
+// ・FPSモードでのカメラブレの補正機能追加
+// ・VIPでのFPSモード有効化
+// ・UIパネルを非表示にできるシーンの拡張
+// 　(シーンレベル15)
+
+// ■カメラブレ補正について
+// Fキー(デフォルトの場合)を一回押下でオリジナルのFPSモード、もう一回押下でブレ補正モード。
+// 再度押下でFPSモード解除。
+
+// FPSモードの視点は男の頭の位置にカメラがセットされますが、
+// 男の動きが激しい体位では視線がガクガクと大きく揺れます。
+// 新しく追加したブレ補正モードではこの揺れを小さく抑えます。
+// ただし男の目の位置とカメラ位置が一致しなくなるので、男の透明度を上げていると
+// 体位によっては男の胴体の一部がちらちらと映り込みます。
+// これの改善のため首の描画を消そうと思いましたが、男モデルは「頭部」「体」の2種類しか
+// レンダリングされていないようで無理っぽかった。
+// 気になる人は男の透明度を下げてください。
+
+
+// CM3D2CameraUtility.Plugin v2.0.1.2 改変（非公式)
 // Original by k8PzhOFo0 (https://github.com/k8PzhOFo0/CM3D2CameraUtility.Plugin)
+
 using System;
 using System.Reflection;
 using System.Linq;
@@ -115,6 +140,9 @@ namespace CM3D2CameraUtility
         private bool uiVisible = true;
         private GameObject profilePanel;
 
+        private Vector3 cameraOffset = Vector3.zero;
+        private bool bFpsShakeCorrection = false;
+
         public void Awake()
         {
             GameObject.DontDestroyOnLoad(this);
@@ -173,6 +201,8 @@ namespace CM3D2CameraUtility
             else
             {
                 uiObject = GameObject.Find("/UI Root/Camera");
+                if (uiObject == null)
+                    uiObject = GameObject.Find("SystemUI Root/Camera");
                 defaultFOV = Camera.main.fieldOfView;
             }
 
@@ -186,6 +216,15 @@ namespace CM3D2CameraUtility
                 GameObject uiRoot = GameObject.Find("/UI Root");
                 profilePanel = uiRoot.transform.Find("UserEditPanel").gameObject;
             }
+            else if (level == 15)
+            {
+                //profilePanelが何をしているのかよくわからないので適当
+                GameObject uiRoot = GameObject.Find("__GameMain__/SystemUI Root");
+                profilePanel = uiRoot.transform.Find("ConfigPanel").gameObject;
+            }
+            cameraOffset = Vector3.zero;
+            bFpsShakeCorrection = false;
+
             fpsMode = false;
         }
 
@@ -233,7 +272,7 @@ namespace CM3D2CameraUtility
 
         private void FirstPersonCamera()
         {
-            if (sceneLevel == 14)
+            if (sceneLevel == 14 || sceneLevel == 15)
             {
                 if (!manHead)
                 {
@@ -241,7 +280,7 @@ namespace CM3D2CameraUtility
                     {
                         GameObject manExHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]");
                         Transform[] manExHeadTransforms = manExHead ? manExHead.GetComponentsInChildren<Transform>() : new Transform[0];
-			
+
                         Transform[] manHedas = manExHeadTransforms.Where(trans => trans.name.IndexOf("_SM_") > -1).ToArray();
 
                         foreach (Transform mh in manHedas)
@@ -280,12 +319,26 @@ namespace CM3D2CameraUtility
                     {
                         if (Input.GetKeyDown(cameraFPSModeToggleKey))
                         {
-                            fpsMode = !fpsMode;
-                            Console.WriteLine("fpsmode = " + fpsMode.ToString());
+                            if (bFpsShakeCorrection)
+                            {
+                                bFpsShakeCorrection = false;
+                                fpsMode = false;
+                                Console.WriteLine("FpsMode = Disable");
+                            }
+                            else if(fpsMode && !bFpsShakeCorrection)
+                            {
+                                bFpsShakeCorrection = true;
+                                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Enable");
+                            }
+                            else
+                            {
+                                fpsMode = true;
+                                SaveCameraPos();
+                                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Disable");
+                            }
+
                             if (fpsMode)
                             {
-                                SaveCameraPos();
-
                                 Camera.main.fieldOfView = fpsModeFoV;
                                 eyetoCamToggle = false;
                                 maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
@@ -320,9 +373,20 @@ namespace CM3D2CameraUtility
                                 oldTargetPos = cameraTargetPosFromScript;
                             }
 
-                            mainCamera.SetPos(manHead.transform.position + manHead.transform.up * fpsOffsetUp + manHead.transform.right * fpsOffsetRight + manHead.transform.forward * fpsOffsetForward);
-                            mainCamera.SetTargetPos(manHead.transform.position + manHead.transform.up * fpsOffsetUp + manHead.transform.right * fpsOffsetRight + manHead.transform.forward * fpsOffsetForward, true);
-                            mainCamera.SetDistance(0f, true);
+                            Vector3 CameraPos = manHead.transform.position + manHead.transform.up * fpsOffsetUp + manHead.transform.right * fpsOffsetRight + manHead.transform.forward * fpsOffsetForward;
+                            if (bFpsShakeCorrection)
+                            {
+                                cameraOffset = Vector3.Lerp(CameraPos, cameraOffset, 0.9f);
+                                mainCamera.SetPos(cameraOffset);
+                                mainCamera.SetTargetPos(cameraOffset, true);
+                                mainCamera.SetDistance(0f, true);
+                            }
+                            else
+                            {
+                                mainCamera.SetPos(CameraPos);
+                                mainCamera.SetTargetPos(CameraPos, true);
+                                mainCamera.SetDistance(0f, true);
+                            }
                         }
                     }
                 }
@@ -490,7 +554,7 @@ namespace CM3D2CameraUtility
         {
             if (Input.GetKeyDown(hideUIToggleKey))
             {
-                if (sceneLevel == 5 || sceneLevel == 14)
+                if (sceneLevel == 5 || sceneLevel == 14 || sceneLevel == 15)
                 {
                     var field = GameMain.Instance.MainCamera.GetType().GetField("m_eFadeState", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -523,6 +587,17 @@ namespace CM3D2CameraUtility
                 }
             }
             else if (sceneLevel == 12)
+            {
+                if (profilePanel.activeSelf)
+                {
+                    allowUpdate = false;
+                }
+                else
+                {
+                    allowUpdate = true;
+                }
+            }
+            else if (sceneLevel == 15)
             {
                 if (profilePanel.activeSelf)
                 {
