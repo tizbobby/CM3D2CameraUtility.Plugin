@@ -1,8 +1,8 @@
-﻿using System;
+﻿// CM3D2CameraUtility.Plugin v2.0.1.2 改変（非公式)
+// Original by k8PzhOFo0 (https://github.com/k8PzhOFo0/CM3D2CameraUtility.Plugin)
+using System;
 using System.Reflection;
-using System.Collections.Generic;
 using System.Linq;
-using System.Text;
 using UnityEngine;
 using UnityInjector;
 using UnityInjector.Attributes;
@@ -14,7 +14,6 @@ namespace CM3D2CameraUtility
     PluginFilter("CM3D2VRx64"),
     PluginName("Camera Utility"),
     PluginVersion("2.0.1.2")]
-
     public class CameraUtility : PluginBase
     {
         //移動関係キー設定
@@ -48,8 +47,10 @@ namespace CM3D2CameraUtility
         private KeyCode cameraRightPitchKey = KeyCode.Backslash;
         private KeyCode cameraPitchInitializeKey = KeyCode.Slash;
         private KeyCode cameraFoVPlusKey = KeyCode.RightBracket;
+
         //Equalsになっているが日本語キーボードだとセミコロン
         private KeyCode cameraFoVMinusKey = KeyCode.Equals;
+
         //Semicolonになっているが日本語キーボードだとコロン
         private KeyCode cameraFoVInitializeKey = KeyCode.Semicolon;
 
@@ -62,12 +63,6 @@ namespace CM3D2CameraUtility
 
         //FPSモード切替キー設定
         private KeyCode cameraFPSModeToggleKey = KeyCode.F;
-
-        //TimeScale変更関係キー設定
-        private KeyCode timeScalePlusKey = KeyCode.LeftBracket;
-        private KeyCode timeScaleMinusKey = KeyCode.P;
-        private KeyCode timeScaleInitialize = KeyCode.BackQuote;
-        private KeyCode timeScaleZero = KeyCode.O;
 
         private enum modKey
         {
@@ -200,10 +195,13 @@ namespace CM3D2CameraUtility
             {
                 case modKey.Shift:
                     return (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
+
                 case modKey.Alt:
                     return (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
+
                 case modKey.Ctrl:
                     return (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
+
                 default:
                     return false;
             }
@@ -241,25 +239,19 @@ namespace CM3D2CameraUtility
                 {
                     if (frameCount == 60)
                     {
-                        GameObject manBipHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]/Offset/_BO_mbody/ManBip/ManBip Spine/ManBip Spine1/ManBip Spine2/ManBip Neck/ManBip Head");
+                        GameObject manExHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]");
+                        Transform[] manExHeadTransforms = manExHead ? manExHead.GetComponentsInChildren<Transform>() : new Transform[0];
+			
+                        Transform[] manHedas = manExHeadTransforms.Where(trans => trans.name.IndexOf("_SM_") > -1).ToArray();
 
-                        if (manBipHead)
+                        foreach (Transform mh in manHedas)
                         {
-                            Transform[] manHedas = manBipHead.GetComponentsInChildren<Transform>();
-
-
-                            foreach (Transform mh in manHedas)
+                            GameObject smManHead = mh.gameObject;
+                            foreach (Transform smmh in smManHead.transform)
                             {
-                                if (mh.name.IndexOf("_SM_mhead") > -1)
+                                if (smmh.name.IndexOf("ManHead") > -1)
                                 {
-                                    GameObject smManHead = mh.gameObject;
-                                    foreach (Transform smmh in smManHead.transform)
-                                    {
-                                        if (smmh.name.IndexOf("ManHead") > -1)
-                                        {
-                                            manHead = smmh.gameObject;
-                                        }
-                                    }
+                                    manHead = smmh.gameObject;
                                 }
                             }
                         }
@@ -282,7 +274,6 @@ namespace CM3D2CameraUtility
                             mainCamera.SetPos(manHead.transform.position);
                             uiObject.transform.position = manHead.transform.position;
                             uiObject.transform.localPosition = localPos;
-
                         }
                     }
                     else
@@ -315,9 +306,6 @@ namespace CM3D2CameraUtility
                                 manHead.renderer.enabled = true;
 
                                 LoadCameraPos();
-                                //Camera.main.fieldOfView = defaultFOV;
-
-                                //mainCamera.ResetFromScriptOnTarget();
                                 eyetoCamToggle = oldEyetoCamToggle;
                                 oldEyetoCamToggle = eyetoCamToggle;
                             }
@@ -330,7 +318,6 @@ namespace CM3D2CameraUtility
                                 Console.WriteLine("Position Changed!");
                                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
                                 oldTargetPos = cameraTargetPosFromScript;
-
                             }
 
                             mainCamera.SetPos(manHead.transform.position + manHead.transform.up * fpsOffsetUp + manHead.transform.right * fpsOffsetRight + manHead.transform.forward * fpsOffsetForward);
@@ -414,6 +401,7 @@ namespace CM3D2CameraUtility
                     direction += new Vector3(0f, cameraUp.y, 0f) * moveSpeed;
                 }
 
+                //bg.position += direction;
                 bg.localPosition += direction;
 
                 if (Input.GetKey(bgLeftRotateKey))
@@ -498,30 +486,6 @@ namespace CM3D2CameraUtility
             }
         }
 
-        private void TimeScaleChanger()
-        {
-            if (Input.GetKeyDown(timeScaleMinusKey))
-            {
-                Time.timeScale = Mathf.Max(0f, Time.timeScale - 0.2f);
-                Console.WriteLine("TileScale:{0}", Time.timeScale);
-            }
-            if (Input.GetKeyDown(timeScalePlusKey))
-            {
-                Time.timeScale += 0.2f;
-                Console.WriteLine("TileScale:{0}", Time.timeScale);
-            }
-            if (Input.GetKeyDown(timeScaleZero))
-            {
-                Time.timeScale = 0f;
-                Console.WriteLine("TileScale:{0}", Time.timeScale);
-            }
-            if (Input.GetKeyDown(timeScaleInitialize))
-            {
-                Time.timeScale = 1f;
-                Console.WriteLine("TileScale:{0}", Time.timeScale);
-            }
-        }
-
         private void HideUI()
         {
             if (Input.GetKeyDown(hideUIToggleKey))
@@ -547,7 +511,6 @@ namespace CM3D2CameraUtility
 
         public void Update()
         {
-
             if (sceneLevel == 5)
             {
                 if (profilePanel.activeSelf)
@@ -581,8 +544,6 @@ namespace CM3D2CameraUtility
                     moveSpeed *= 0.1f;
                     rotateSpeed *= 0.1f;
                 }
-
-                //TimeScaleChanger();
 
                 FirstPersonCamera();
 
