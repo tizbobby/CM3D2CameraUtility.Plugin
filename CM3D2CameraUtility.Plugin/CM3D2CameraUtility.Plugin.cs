@@ -37,8 +37,9 @@ namespace CM3D2CameraUtility
     [PluginFilter("CM3D2x64"),
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
+    PluginFilter("CM3D2OHx64"),
     PluginName("Camera Utility"),
-    PluginVersion("2.0.1.2")]
+    PluginVersion("2.0.1.2-20160220")]
     public class CameraUtility : PluginBase
     {
         //移動関係キー設定
@@ -107,6 +108,7 @@ namespace CM3D2CameraUtility
         private float defaultFOV = 35f;
         private bool allowUpdate = false;
         private bool occulusVR = false;
+        private bool chubLip = false;
         private bool fpsMode = false;
         private bool eyetoCamToggle = false;
 
@@ -148,7 +150,9 @@ namespace CM3D2CameraUtility
             GameObject.DontDestroyOnLoad(this);
 
             string path = Application.dataPath;
+            chubLip = path.Contains("CM3D2OHx64");
             occulusVR = path.Contains("CM3D2VRx64");
+            
             if (occulusVR)
             {
                 bgLeftMoveKey = bgLeftMoveKeyVR;
@@ -226,7 +230,7 @@ namespace CM3D2CameraUtility
             bFpsShakeCorrection = false;
 
             fpsMode = false;
-        }
+    }
 
         private bool getModKeyPressing(modKey key)
         {
@@ -272,7 +276,7 @@ namespace CM3D2CameraUtility
 
         private void FirstPersonCamera()
         {
-            if (sceneLevel == 14 || sceneLevel == 15)
+            if ((chubLip && sceneLevel == 10) || sceneLevel == 14 || sceneLevel == 15 || sceneLevel == 24)
             {
                 if (!manHead)
                 {
