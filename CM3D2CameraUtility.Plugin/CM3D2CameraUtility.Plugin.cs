@@ -30,6 +30,8 @@
 // Original by k8PzhOFo0 (https://github.com/k8PzhOFo0/CM3D2CameraUtility.Plugin)
 
 using System;
+using System.Collections;
+using System.Collections.Generic;
 using System.Reflection;
 using System.Linq;
 using UnityEngine;
@@ -150,8 +152,9 @@ namespace CM3D2CameraUtility
             (int)Scene.SceneYotogi_ChuB,
         };
 
-        private enum modKey
+        private enum ModifierKey
         {
+            None = 0,
             Shift,
             Alt,
             Ctrl
@@ -208,6 +211,11 @@ namespace CM3D2CameraUtility
         //FPSモード切替キー設定
         private KeyCode cameraFPSModeToggleKey = KeyCode.F;
 
+        //モディファイアキー設定
+        private ModifierKey bgSpeedDownModifier = ModifierKey.Shift;
+        private ModifierKey bgResetModifier = ModifierKey.Alt;
+
+        //オブジェクト
         private Maid maid;
         private CameraMain mainCamera;
         private Transform mainCameraTransform;
@@ -217,7 +225,6 @@ namespace CM3D2CameraUtility
         private GameObject uiObject;
 
         private float defaultFOV = 35f;
-        private bool allowUpdate = false;
         private bool occulusVR = false;
         private bool chubLip = false;
         private bool fpsMode = false;
@@ -230,7 +237,6 @@ namespace CM3D2CameraUtility
         private float fpsModeFoV = 60f;
 
         private int sceneLevel;
-        private int frameCount = 0;
 
         private float fpsOffsetForward = 0.02f;
         private float fpsOffsetUp = -0.06f;
@@ -256,6 +262,9 @@ namespace CM3D2CameraUtility
         private Vector3 cameraOffset = Vector3.zero;
         private bool bFpsShakeCorrection = false;
 
+        private float stateCheckInterval = 1f;
+        private LinkedList<Coroutine> mainCoroutines = new LinkedList<Coroutine>();
+
         #endregion
         #region Override Methods
 
@@ -266,7 +275,7 @@ namespace CM3D2CameraUtility
             string path = Application.dataPath;
             chubLip = path.Contains("CM3D2OHx64");
             occulusVR = path.Contains("CM3D2VRx64");
-            
+
             if (occulusVR)
             {
                 bgLeftMoveKey = bgLeftMoveKeyVR;
@@ -291,26 +300,32 @@ namespace CM3D2CameraUtility
         public void OnLevelWasLoaded(int level)
         {
             sceneLevel = level;
+            StopMainCoroutines();
+            if (InitializeSceneObjects())
+            {
+                StartMainCoroutines();
+            }
+        }
 
+        #endregion
+        #region Private Methods
+
+        private bool AllowUpdate
+        {
+            get
+            {
+                // 文字入力パネルがアクティブの場合 false
+                return profilePanel == null || !profilePanel.activeSelf;
+            }
+        }
+
+        private bool InitializeSceneObjects()
+        {
             maid = GameMain.Instance.CharacterMgr.GetMaid(0);
-
-            if (maid)
-            {
-                maidTransform = maid.body0.transform;
-            }
-
+            maidTransform = maid ? maid.body0.transform : null;
             bg = GameObject.Find("__GameMain__/BG").transform;
-
             mainCamera = GameMain.Instance.MainCamera;
-
-            if (maid && bg && maidTransform)
-            {
-                allowUpdate = true;
-            }
-            else
-            {
-                allowUpdate = false;
-            }
+            manHead = null;
 
             if (occulusVR)
             {
@@ -320,7 +335,9 @@ namespace CM3D2CameraUtility
             {
                 uiObject = GameObject.Find("/UI Root/Camera");
                 if (uiObject == null)
+                {
                     uiObject = GameObject.Find("SystemUI Root/Camera");
+                }
                 defaultFOV = Camera.main.fieldOfView;
             }
 
@@ -338,62 +355,71 @@ namespace CM3D2CameraUtility
             {
                 profilePanel = null;
             }
+
             cameraOffset = Vector3.zero;
             bFpsShakeCorrection = false;
-
             fpsMode = false;
+
+            return maid && maidTransform && bg && mainCamera;
         }
 
-        public void Update()
+        private void StartMainCoroutines()
         {
-            if (sceneLevel == (int)Scene.SceneEdit || sceneLevel == (int)Scene.SceneUserEdit)
+            // Start FirstPersonCamera
+            if ((chubLip && EnableFpsScenesChuB.Contains(sceneLevel)) || EnableFpsScenes.Contains(sceneLevel))
             {
-                if (profilePanel != null && profilePanel.activeSelf)
+                if (occulusVR)
                 {
-                    return;
+                    mainCoroutines.AddLast(StartCoroutine(OVRFirstPersonCameraCoroutine()));
+                }
+                else
+                {
+                    mainCoroutines.AddLast(StartCoroutine(FirstPersonCameraCoroutine()));
                 }
             }
 
-            if (allowUpdate)
+            // Start LookAtThis
+            mainCoroutines.AddLast(StartCoroutine(LookAtThisCoroutine()));
+
+            // Start FloorMover
+            mainCoroutines.AddLast(StartCoroutine(FloorMoverCoroutine()));
+
+            // Start ExtendedCameraHandle
+            if (!occulusVR)
             {
-                float moveSpeed = floorMoveSpeed;
-                float rotateSpeed = maidRotateSpeed;
+                mainCoroutines.AddLast(StartCoroutine(ExtendedCameraHandleCoroutine()));
+            }
 
-                if (getModKeyPressing(modKey.Shift))
-                {
-                    moveSpeed *= 0.1f;
-                    rotateSpeed *= 0.1f;
-                }
-
-                FirstPersonCamera();
-
-                LookAtThis();
-
-                FloorMover(moveSpeed, rotateSpeed);
-
+            // Start HideUI
+            if ((chubLip && EnableHideUIScenesChuB.Contains(sceneLevel)) || EnableHideUIScenes.Contains(sceneLevel))
+            {
                 if (!occulusVR)
                 {
-                    ExtendedCameraHandle();
-
-                    HideUI();
+                    mainCoroutines.AddLast(StartCoroutine(HideUICoroutine()));
                 }
             }
         }
 
-        #endregion
-        #region Private Methods
+        private void StopMainCoroutines()
+        {
+            foreach (var coroutine in mainCoroutines)
+            {
+                StopCoroutine(coroutine);
+            }
+            mainCoroutines.Clear();
+        }
 
-        private bool getModKeyPressing(modKey key)
+        private bool IsModKeyPressing(ModifierKey key)
         {
             switch (key)
             {
-                case modKey.Shift:
+                case ModifierKey.Shift:
                     return (Input.GetKey(KeyCode.LeftShift) || Input.GetKey(KeyCode.RightShift));
 
-                case modKey.Alt:
+                case ModifierKey.Alt:
                     return (Input.GetKey(KeyCode.LeftAlt) || Input.GetKey(KeyCode.RightAlt));
 
-                case modKey.Ctrl:
+                case ModifierKey.Ctrl:
                     return (Input.GetKey(KeyCode.LeftControl) || Input.GetKey(KeyCode.RightControl));
 
                 default:
@@ -403,6 +429,9 @@ namespace CM3D2CameraUtility
 
         private void SaveCameraPos()
         {
+            Assert.IsNotNull(mainCamera);
+            Assert.IsNotNull(mainCameraTransform);
+
             oldPos = mainCamera.GetPos();
             oldTargetPos = mainCamera.GetTargetPos();
             oldDistance = mainCamera.GetDistance();
@@ -412,6 +441,9 @@ namespace CM3D2CameraUtility
 
         private void LoadCameraPos()
         {
+            Assert.IsNotNull(mainCamera);
+            Assert.IsNotNull(mainCameraTransform);
+
             mainCameraTransform.rotation = oldRotation;
             mainCamera.SetPos(oldPos);
             mainCamera.SetTargetPos(oldTargetPos, true);
@@ -421,314 +453,420 @@ namespace CM3D2CameraUtility
 
         private Vector3 GetYotogiPlayPosition()
         {
+            Assert.IsNotNull(mainCamera);
             var field = mainCamera.GetType().GetField("m_vCenter", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
             return (Vector3)field.GetValue(mainCamera);
         }
 
-        private void FirstPersonCamera()
+        private int GetFadeState()
         {
-            if ((chubLip && EnableFpsScenesChuB.Contains(sceneLevel)) || EnableFpsScenes.Contains(sceneLevel))
+            Assert.IsNotNull(mainCamera);
+            var field = mainCamera.GetType().GetField("m_eFadeState", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
+            return (int)field.GetValue(mainCamera);
+        }
+
+        private GameObject FindManHead()
+        {
+            GameObject manExHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]");
+            Transform[] manExHeadTransforms = manExHead ? manExHead.GetComponentsInChildren<Transform>() : new Transform[0];
+            Transform[] manHedas = manExHeadTransforms.Where(trans => trans.name.IndexOf("_SM_") > -1).ToArray();
+            foreach (Transform mh in manHedas)
             {
-                if (!manHead)
+                GameObject smManHead = mh.gameObject;
+                foreach (Transform smmh in smManHead.transform)
                 {
-                    if (frameCount == 60)
+                    if (smmh.name.IndexOf("ManHead") > -1)
                     {
-                        GameObject manExHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]");
-                        Transform[] manExHeadTransforms = manExHead ? manExHead.GetComponentsInChildren<Transform>() : new Transform[0];
-
-                        Transform[] manHedas = manExHeadTransforms.Where(trans => trans.name.IndexOf("_SM_") > -1).ToArray();
-
-                        foreach (Transform mh in manHedas)
-                        {
-                            GameObject smManHead = mh.gameObject;
-                            foreach (Transform smmh in smManHead.transform)
-                            {
-                                if (smmh.name.IndexOf("ManHead") > -1)
-                                {
-                                    manHead = smmh.gameObject;
-                                }
-                            }
-                        }
-                        frameCount = 0;
-                    }
-                    else
-                    {
-                        frameCount++;
-                    }
-                }
-                else
-                {
-                    if (occulusVR)
-                    {
-                        if (Input.GetKeyDown(cameraFPSModeToggleKey))
-                        {
-                            //    eyetoCamToggle = false;
-                            //    maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
-                            Vector3 localPos = uiObject.transform.localPosition;
-                            mainCamera.SetPos(manHead.transform.position);
-                            uiObject.transform.position = manHead.transform.position;
-                            uiObject.transform.localPosition = localPos;
-                        }
-                    }
-                    else
-                    {
-                        if (Input.GetKeyDown(cameraFPSModeToggleKey))
-                        {
-                            if (bFpsShakeCorrection)
-                            {
-                                bFpsShakeCorrection = false;
-                                fpsMode = false;
-                                Console.WriteLine("FpsMode = Disable");
-                            }
-                            else if(fpsMode && !bFpsShakeCorrection)
-                            {
-                                bFpsShakeCorrection = true;
-                                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Enable");
-                            }
-                            else
-                            {
-                                fpsMode = true;
-                                SaveCameraPos();
-                                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Disable");
-                            }
-
-                            if (fpsMode)
-                            {
-                                Camera.main.fieldOfView = fpsModeFoV;
-                                eyetoCamToggle = false;
-                                maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
-
-                                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
-
-                                manHead.renderer.enabled = false;
-                            }
-                            else
-                            {
-                                Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
-
-                                if (oldTargetPos != cameraTargetPosFromScript)
-                                {
-                                    Console.WriteLine("Position Changed!");
-                                    oldTargetPos = cameraTargetPosFromScript;
-                                }
-                                manHead.renderer.enabled = true;
-
-                                LoadCameraPos();
-                                eyetoCamToggle = oldEyetoCamToggle;
-                                oldEyetoCamToggle = eyetoCamToggle;
-                            }
-                        }
-                        if (fpsMode)
-                        {
-                            Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
-                            if (oldTargetPos != cameraTargetPosFromScript)
-                            {
-                                Console.WriteLine("Position Changed!");
-                                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
-                                oldTargetPos = cameraTargetPosFromScript;
-                            }
-
-                            Vector3 cameraPos = manHead.transform.position
-                                + manHead.transform.up * fpsOffsetUp
-                                + manHead.transform.right * fpsOffsetRight
-                                + manHead.transform.forward * fpsOffsetForward;
-                            if (bFpsShakeCorrection)
-                            {
-                                cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
-                            }
-                            else
-                            {
-                                cameraOffset = cameraPos;
-                            }
-                            mainCamera.SetPos(cameraOffset);
-                            mainCamera.SetTargetPos(cameraOffset, true);
-                            mainCamera.SetDistance(0f, true);
-                        }
+                        return smmh.gameObject;
                     }
                 }
             }
+            return null;
         }
 
-        private void ExtendedCameraHandle()
+        private void OVRToggleFirstPersonCameraMode()
         {
-            if (!occulusVR)
+            if (uiObject)
             {
-                if (mainCameraTransform)
-                {
-                    if (Input.GetKey(cameraFoVMinusKey))
-                    {
-                        Camera.main.fieldOfView += -cameraFOVChangeSpeed;
-                    }
-                    if (Input.GetKey(cameraFoVInitializeKey))
-                    {
-                        Camera.main.fieldOfView = defaultFOV;
-                    }
-                    if (Input.GetKey(cameraFoVPlusKey))
-                    {
-                        Camera.main.fieldOfView += cameraFOVChangeSpeed;
-                    }
-                    if (Input.GetKey(cameraLeftPitchKey))
-                    {
-                        mainCameraTransform.Rotate(0, 0, cameraRotateSpeed);
-                    }
-                    if (Input.GetKey(cameraPitchInitializeKey))
-                    {
-                        mainCameraTransform.eulerAngles = new Vector3(
-                            mainCameraTransform.rotation.eulerAngles.x,
-                            mainCameraTransform.rotation.eulerAngles.y,
-                            0f);
-                    }
-                    if (Input.GetKey(cameraRightPitchKey))
-                    {
-                        mainCameraTransform.Rotate(0, 0, -cameraRotateSpeed);
-                    }
-                }
+                //    eyetoCamToggle = false;
+                //    maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
+                Vector3 localPos = uiObject.transform.localPosition;
+                mainCamera.SetPos(manHead.transform.position);
+                uiObject.transform.position = manHead.transform.position;
+                uiObject.transform.localPosition = localPos;
             }
         }
 
-        private void FloorMover(float moveSpeed, float rotateSpeed)
+        private void ToggleFirstPersonCameraMode()
         {
-            if (bg)
+            Assert.IsNotNull(maid);
+            Assert.IsNotNull(manHead);
+            Assert.IsNotNull(mainCameraTransform);
+
+            if (bFpsShakeCorrection)
             {
-                Vector3 cameraForward = mainCameraTransform.TransformDirection(Vector3.forward);
-                Vector3 cameraRight = mainCameraTransform.TransformDirection(Vector3.right);
-                Vector3 cameraUp = mainCameraTransform.TransformDirection(Vector3.up);
+                bFpsShakeCorrection = false;
+                fpsMode = false;
+                Console.WriteLine("FpsMode = Disable");
+            }
+            else if(fpsMode && !bFpsShakeCorrection)
+            {
+                bFpsShakeCorrection = true;
+                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Enable");
+            }
+            else
+            {
+                fpsMode = true;
+                SaveCameraPos();
+                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Disable");
+            }
 
-                Vector3 direction = Vector3.zero;
+            if (fpsMode)
+            {
+                Camera.main.fieldOfView = fpsModeFoV;
+                eyetoCamToggle = false;
+                maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
 
-                if (Input.GetKey(bgLeftMoveKey))
-                {
-                    direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * moveSpeed;
-                }
-                if (Input.GetKey(bgRightMoveKey))
-                {
-                    direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * -moveSpeed;
-                }
-                if (Input.GetKey(bgBackMoveKey))
-                {
-                    direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * moveSpeed;
-                }
-                if (Input.GetKey(bgForwardMoveKey))
-                {
-                    direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * -moveSpeed;
-                }
-                if (Input.GetKey(bgUpMoveKey))
-                {
-                    direction += new Vector3(0f, cameraUp.y, 0f) * -moveSpeed;
-                }
-                if (Input.GetKey(bgDownMoveKey))
-                {
-                    direction += new Vector3(0f, cameraUp.y, 0f) * moveSpeed;
-                }
+                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
 
-                //bg.position += direction;
-                bg.localPosition += direction;
+                manHead.renderer.enabled = false;
+            }
+            else
+            {
+                Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
 
-                if (Input.GetKey(bgLeftRotateKey))
+                if (oldTargetPos != cameraTargetPosFromScript)
                 {
-                    bg.RotateAround(maidTransform.transform.position, Vector3.up, rotateSpeed);
+                    Console.WriteLine("Position Changed!");
+                    oldTargetPos = cameraTargetPosFromScript;
                 }
-                if (Input.GetKey(bgRightRotateKey))
-                {
-                    bg.RotateAround(maidTransform.transform.position, Vector3.up, -rotateSpeed);
-                }
-                if (Input.GetKey(bgLeftPitchKey))
-                {
-                    bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), rotateSpeed);
-                }
-                if (Input.GetKey(bgRightPitchKey))
-                {
-                    bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), -rotateSpeed);
-                }
+                manHead.renderer.enabled = true;
 
-                if (getModKeyPressing(modKey.Alt) && (Input.GetKey(bgLeftRotateKey) || Input.GetKey(bgRightRotateKey)))
+                LoadCameraPos();
+                eyetoCamToggle = oldEyetoCamToggle;
+                oldEyetoCamToggle = eyetoCamToggle;
+            }
+        }
+
+        private void UpdateFirstPersonCamera()
+        {
+            Assert.IsNotNull(manHead);
+            Assert.IsNotNull(mainCamera);
+            Assert.IsNotNull(mainCameraTransform);
+
+            Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
+            if (oldTargetPos != cameraTargetPosFromScript)
+            {
+                Console.WriteLine("Position Changed!");
+                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
+                oldTargetPos = cameraTargetPosFromScript;
+            }
+
+            Vector3 cameraPos = manHead.transform.position
+                + manHead.transform.up * fpsOffsetUp
+                + manHead.transform.right * fpsOffsetRight
+                + manHead.transform.forward * fpsOffsetForward;
+            if (bFpsShakeCorrection)
+            {
+                cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
+            }
+            else
+            {
+                cameraOffset = cameraPos;
+            }
+            mainCamera.SetPos(cameraOffset);
+            mainCamera.SetTargetPos(cameraOffset, true);
+            mainCamera.SetDistance(0f, true);
+        }
+
+        private void UpdateExtendedCameraHandle()
+        {
+            Assert.IsNotNull(mainCameraTransform);
+
+            if (Input.GetKey(cameraFoVMinusKey))
+            {
+                Camera.main.fieldOfView += -cameraFOVChangeSpeed;
+            }
+            if (Input.GetKey(cameraFoVInitializeKey))
+            {
+                Camera.main.fieldOfView = defaultFOV;
+            }
+            if (Input.GetKey(cameraFoVPlusKey))
+            {
+                Camera.main.fieldOfView += cameraFOVChangeSpeed;
+            }
+            if (Input.GetKey(cameraLeftPitchKey))
+            {
+                mainCameraTransform.Rotate(0, 0, cameraRotateSpeed);
+            }
+            if (Input.GetKey(cameraPitchInitializeKey))
+            {
+                mainCameraTransform.eulerAngles = new Vector3(
+                        mainCameraTransform.rotation.eulerAngles.x,
+                        mainCameraTransform.rotation.eulerAngles.y,
+                        0f);
+            }
+            if (Input.GetKey(cameraRightPitchKey))
+            {
+                mainCameraTransform.Rotate(0, 0, -cameraRotateSpeed);
+            }
+        }
+
+        private void UpdateBackgroudPosition()
+        {
+            Assert.IsNotNull(bg);
+
+            if (Input.GetKeyDown(bgInitializeKey))
+            {
+                bg.localPosition = Vector3.zero;
+                bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
+                bg.RotateAround(maidTransform.position, Vector3.right, -bg.rotation.eulerAngles.x);
+                bg.RotateAround(maidTransform.position, Vector3.forward, -bg.rotation.eulerAngles.z);
+                bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
+                return;
+            }
+
+            if (IsModKeyPressing(bgResetModifier))
+            {
+                if (Input.GetKey(bgLeftRotateKey) || Input.GetKey(bgRightRotateKey))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
                 }
-                if (getModKeyPressing(modKey.Alt) && (Input.GetKey(bgLeftPitchKey) || Input.GetKey(bgRightPitchKey)))
+                if (Input.GetKey(bgLeftPitchKey) || Input.GetKey(bgRightPitchKey))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.forward, -bg.rotation.eulerAngles.z);
                     bg.RotateAround(maidTransform.position, Vector3.right, -bg.rotation.eulerAngles.x);
                 }
-                if (getModKeyPressing(modKey.Alt) && (Input.GetKey(bgLeftMoveKey) || Input.GetKey(bgRightMoveKey) || Input.GetKey(bgBackMoveKey) || Input.GetKey(bgForwardMoveKey)))
+                if (Input.GetKey(bgLeftMoveKey) || Input.GetKey(bgRightMoveKey) || Input.GetKey(bgBackMoveKey) || Input.GetKey(bgForwardMoveKey))
                 {
                     bg.localPosition = new Vector3(0f, bg.localPosition.y, 0f);
                 }
-                if (getModKeyPressing(modKey.Alt) && (Input.GetKey(bgUpMoveKey) || Input.GetKey(bgDownMoveKey)))
+                if (Input.GetKey(bgUpMoveKey) || Input.GetKey(bgDownMoveKey))
                 {
                     bg.localPosition = new Vector3(bg.localPosition.x, 0f, bg.localPosition.z);
                 }
-                if (Input.GetKeyDown(bgInitializeKey))
-                {
-                    bg.localPosition = Vector3.zero;
-                    bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
-                    bg.RotateAround(maidTransform.position, Vector3.right, -bg.rotation.eulerAngles.x);
-                    bg.RotateAround(maidTransform.position, Vector3.forward, -bg.rotation.eulerAngles.z);
-                    bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
-                }
+                return;
+            }
+
+            Vector3 cameraForward = mainCameraTransform.TransformDirection(Vector3.forward);
+            Vector3 cameraRight = mainCameraTransform.TransformDirection(Vector3.right);
+            Vector3 cameraUp = mainCameraTransform.TransformDirection(Vector3.up);
+            Vector3 direction = Vector3.zero;
+
+            float moveSpeed = floorMoveSpeed;
+            float rotateSpeed = maidRotateSpeed;
+            if (IsModKeyPressing(bgSpeedDownModifier))
+            {
+                moveSpeed *= 0.1f;
+                rotateSpeed *= 0.1f;
+            }
+
+            if (Input.GetKey(bgLeftMoveKey))
+            {
+                direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * moveSpeed;
+            }
+            if (Input.GetKey(bgRightMoveKey))
+            {
+                direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * -moveSpeed;
+            }
+            if (Input.GetKey(bgBackMoveKey))
+            {
+                direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * moveSpeed;
+            }
+            if (Input.GetKey(bgForwardMoveKey))
+            {
+                direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * -moveSpeed;
+            }
+            if (Input.GetKey(bgUpMoveKey))
+            {
+                direction += new Vector3(0f, cameraUp.y, 0f) * -moveSpeed; }
+            if (Input.GetKey(bgDownMoveKey))
+            {
+                direction += new Vector3(0f, cameraUp.y, 0f) * moveSpeed;
+            }
+
+            //bg.position += direction;
+            bg.localPosition += direction;
+
+            if (Input.GetKey(bgLeftRotateKey))
+            {
+                bg.RotateAround(maidTransform.transform.position, Vector3.up, rotateSpeed);
+            }
+            if (Input.GetKey(bgRightRotateKey))
+            {
+                bg.RotateAround(maidTransform.transform.position, Vector3.up, -rotateSpeed);
+            }
+            if (Input.GetKey(bgLeftPitchKey))
+            {
+                bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), rotateSpeed);
+            }
+            if (Input.GetKey(bgRightPitchKey))
+            {
+                bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), -rotateSpeed);
             }
         }
 
-        private void LookAtThis()
+        private void ChangeEyeToCam()
         {
-            if (Input.GetKeyDown(eyetoCamChangeKey))
+            Assert.IsNotNull(maid);
+
+            if (eyeToCamIndex == Enum.GetNames(typeof(Maid.EyeMoveType)).Length - 1)
             {
-                if (eyeToCamIndex == Enum.GetNames(typeof(Maid.EyeMoveType)).Length - 1)
-                {
-                    eyetoCamToggle = false;
-                    eyeToCamIndex = 0;
-                }
-                else
-                {
-                    eyeToCamIndex++;
-                    eyetoCamToggle = true;
-                }
-                maid.EyeToCamera((Maid.EyeMoveType)eyeToCamIndex, 0f);
+                eyetoCamToggle = false;
+                eyeToCamIndex = 0;
+            }
+            else
+            {
+                eyeToCamIndex++;
+                eyetoCamToggle = true;
+            }
+            maid.EyeToCamera((Maid.EyeMoveType)eyeToCamIndex, 0f);
+            Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+        }
+
+        private void ToggleEyeToCam()
+        {
+            Assert.IsNotNull(maid);
+
+            eyetoCamToggle = !eyetoCamToggle;
+            if (!eyetoCamToggle)
+            {
+                maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
+                eyeToCamIndex = 0;
                 Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
             }
-
-            if (Input.GetKeyDown(eyetoCamToggleKey))
+            else
             {
-                eyetoCamToggle = !eyetoCamToggle;
-                //Console.WriteLine("Eye to Cam : {0}", eyetoCamToggle);
-                if (!eyetoCamToggle)
+                maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0f);
+                eyeToCamIndex = 5;
+                Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+            }
+        }
+
+        private void ToggleUIVisible()
+        {
+            uiVisible = !uiVisible;
+            if (uiObject)
+            {
+                uiObject.SetActive(uiVisible);
+                Console.WriteLine("UIVisible:{0}", uiVisible);
+            }
+        }
+
+        #endregion
+        #region Coroutines
+
+        private IEnumerator OVRFirstPersonCameraCoroutine()
+        {
+            while (!manHead)
+            {
+                manHead = FindManHead();
+                yield return new WaitForSeconds(stateCheckInterval);
+            }
+            while (true)
+            {
+                while (!AllowUpdate)
                 {
-                    maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
-                    eyeToCamIndex = 0;
-                    Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+                    yield return new WaitForSeconds(stateCheckInterval);
                 }
-                else
+                if (Input.GetKeyDown(cameraFPSModeToggleKey))
                 {
-                    maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0f);
-                    eyeToCamIndex = 5;
-                    Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+                    OVRToggleFirstPersonCameraMode();
+                }
+                yield return null;
+            }
+        }
+
+        private IEnumerator FirstPersonCameraCoroutine()
+        {
+            while (!manHead)
+            {
+                manHead = FindManHead();
+                yield return new WaitForSeconds(stateCheckInterval);
+            }
+            while (true)
+            {
+                while (!AllowUpdate)
+                {
+                    yield return new WaitForSeconds(stateCheckInterval);
+                }
+                if (Input.GetKeyDown(cameraFPSModeToggleKey))
+                {
+                    ToggleFirstPersonCameraMode();
+                }
+                if (fpsMode)
+                {
+                    UpdateFirstPersonCamera();
                 }
             }
         }
 
-        private void HideUI()
+        private IEnumerator FloorMoverCoroutine()
         {
-            if (Input.GetKeyDown(hideUIToggleKey))
+            while (true)
             {
-                if ((chubLip && EnableHideUIScenesChuB.Contains(sceneLevel)) || EnableHideUIScenes.Contains(sceneLevel))
-                {
-                    var field = GameMain.Instance.MainCamera.GetType().GetField("m_eFadeState", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
+                UpdateBackgroudPosition();
+                yield return null;
+            }
+        }
 
-                    int i = (int)field.GetValue(mainCamera);
-                    //Console.WriteLine("FadeState:{0}", i);
-                    if (i == 0)
-                    {
-                        uiVisible = !uiVisible;
-                        if (uiObject)
-                        {
-                            uiObject.SetActive(uiVisible);
-                        }
-                    }
-                    Console.WriteLine("UIVisible:{0}", uiVisible);
+        private IEnumerator ExtendedCameraHandleCoroutine()
+        {
+            while (true)
+            {
+                UpdateExtendedCameraHandle();
+                yield return null;
+            }
+        }
+
+        private IEnumerator LookAtThisCoroutine()
+        {
+            while (true)
+            {
+                if (Input.GetKeyDown(eyetoCamChangeKey))
+                {
+                    ChangeEyeToCam();
                 }
+                if (Input.GetKeyDown(eyetoCamToggleKey))
+                {
+                    ToggleEyeToCam();
+                }
+                yield return null;
+            }
+        }
+
+        private IEnumerator HideUICoroutine()
+        {
+            while (true)
+            {
+                if (Input.GetKeyDown(hideUIToggleKey))
+                {
+                    if (GetFadeState() == 0)
+                    {
+                        ToggleUIVisible();
+                    }
+                }
+                yield return null;
             }
         }
 
         #endregion
     }
+
+    #region Helper Classes
+
+    public static class Assert
+    {
+        [System.Diagnostics.Conditional("DEBUG")]
+        public static void IsNotNull(object obj)
+        {
+            if (obj == null)
+            {
+                string msg = "Assertion failed. Value is null.";
+                UnityEngine.Debug.LogError(msg);
+            }
+        }
+    }
+
+    #endregion
 }
