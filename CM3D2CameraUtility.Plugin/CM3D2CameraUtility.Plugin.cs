@@ -46,6 +46,8 @@ namespace CM3D2CameraUtility
     PluginVersion("2.0.1.2-20160220")]
     public class CameraUtility : PluginBase
     {
+        #region Constants
+
         /// <summary>CM3D2のシーンリスト</summary>
         private enum Scene
         {
@@ -148,6 +150,16 @@ namespace CM3D2CameraUtility
             (int)Scene.SceneYotogi_ChuB,
         };
 
+        private enum modKey
+        {
+            Shift,
+            Alt,
+            Ctrl
+        }
+
+        #endregion
+        #region Variables
+
         //移動関係キー設定
         private KeyCode bgLeftMoveKey = KeyCode.LeftArrow;
         private KeyCode bgRightMoveKey = KeyCode.RightArrow;
@@ -196,13 +208,6 @@ namespace CM3D2CameraUtility
         //FPSモード切替キー設定
         private KeyCode cameraFPSModeToggleKey = KeyCode.F;
 
-        private enum modKey
-        {
-            Shift,
-            Alt,
-            Ctrl
-        }
-
         private Maid maid;
         private CameraMain mainCamera;
         private Transform mainCameraTransform;
@@ -250,6 +255,9 @@ namespace CM3D2CameraUtility
 
         private Vector3 cameraOffset = Vector3.zero;
         private bool bFpsShakeCorrection = false;
+
+        #endregion
+        #region Override Methods
 
         public void Awake()
         {
@@ -334,7 +342,46 @@ namespace CM3D2CameraUtility
             bFpsShakeCorrection = false;
 
             fpsMode = false;
-    }
+        }
+
+        public void Update()
+        {
+            if (sceneLevel == (int)Scene.SceneEdit || sceneLevel == (int)Scene.SceneUserEdit)
+            {
+                if (profilePanel != null && profilePanel.activeSelf)
+                {
+                    return;
+                }
+            }
+
+            if (allowUpdate)
+            {
+                float moveSpeed = floorMoveSpeed;
+                float rotateSpeed = maidRotateSpeed;
+
+                if (getModKeyPressing(modKey.Shift))
+                {
+                    moveSpeed *= 0.1f;
+                    rotateSpeed *= 0.1f;
+                }
+
+                FirstPersonCamera();
+
+                LookAtThis();
+
+                FloorMover(moveSpeed, rotateSpeed);
+
+                if (!occulusVR)
+                {
+                    ExtendedCameraHandle();
+
+                    HideUI();
+                }
+            }
+        }
+
+        #endregion
+        #region Private Methods
 
         private bool getModKeyPressing(modKey key)
         {
@@ -682,40 +729,6 @@ namespace CM3D2CameraUtility
             }
         }
 
-        public void Update()
-        {
-            if (sceneLevel == (int)Scene.SceneEdit || sceneLevel == (int)Scene.SceneUserEdit)
-            {
-                if (profilePanel != null && profilePanel.activeSelf)
-                {
-                    return;
-                }
-            }
-
-            if (allowUpdate)
-            {
-                float moveSpeed = floorMoveSpeed;
-                float rotateSpeed = maidRotateSpeed;
-
-                if (getModKeyPressing(modKey.Shift))
-                {
-                    moveSpeed *= 0.1f;
-                    rotateSpeed *= 0.1f;
-                }
-
-                FirstPersonCamera();
-
-                LookAtThis();
-
-                FloorMover(moveSpeed, rotateSpeed);
-
-                if (!occulusVR)
-                {
-                    ExtendedCameraHandle();
-
-                    HideUI();
-                }
-            }
-        }
+        #endregion
     }
 }
