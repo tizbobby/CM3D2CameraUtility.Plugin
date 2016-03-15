@@ -46,6 +46,108 @@ namespace CM3D2CameraUtility
     PluginVersion("2.0.1.2-20160220")]
     public class CameraUtility : PluginBase
     {
+        /// <summary>CM3D2のシーンリスト</summary>
+        private enum Scene
+        {
+            /// <summary>メイド選択(夜伽、品評会の前など)</summary>
+            SceneCharacterSelect = 1,
+
+            /// <summary>品評会</summary>
+            SceneCompetitiveShow = 2,
+
+            /// <summary>昼夜メニュー、仕事結果</summary>
+            SceneDaily = 3,
+
+            /// <summary>ダンス1(ドキドキ Fallin' Love)</summary>
+            SceneDance_DDFL = 4,
+
+            /// <summary>メイドエディット</summary>
+            SceneEdit = 5,
+
+            /// <summary>メーカーロゴ</summary>
+            SceneLogo = 6,
+
+            /// <summary>メイド管理</summary>
+            SceneMaidManagement = 7,
+
+            /// <summary>ショップ</summary>
+            SceneShop = 8,
+
+            /// <summary>タイトル画面</summary>
+            SceneTitle = 9,
+
+            /// <summary>トロフィー閲覧</summary>
+            SceneTrophy = 10,
+
+            /// <summary>Chu-B Lip 夜伽</summary>
+            SceneYotogi_ChuB = 10,
+
+            /// <summary>？？？</summary>
+            SceneTryInfo = 11,
+
+            /// <summary>主人公エディット</summary>
+            SceneUserEdit = 12,
+
+            /// <summary>起動時警告画面</summary>
+            SceneWarning = 13,
+
+            /// <summary>夜伽</summary>
+            SceneYotogi = 14,
+
+            /// <summary>ADVパート(kgスクリプト処理)</summary>
+            SceneADV = 15,
+
+            /// <summary>日付画面</summary>
+            SceneStartDaily = 16,
+
+            /// <summary>タイトルに戻る</summary>
+            SceneToTitle = 17,
+
+            /// <summary>MVP</summary>
+            SceneSingleEffect = 18,
+
+            /// <summary>スタッフロール</summary>
+            SceneStaffRoll = 19,
+
+            /// <summary>ダンス2(Entrance To You)</summary>
+            SceneDance_ETY = 20,
+
+            /// <summary>ダンス3(Scarlet Leap)</summary>
+            SceneDance_SL = 22,
+
+            /// <summary>回想モード</summary>
+            SceneRecollection = 24,
+
+            /// <summary>撮影モード</summary>
+            ScenePhotoMode = 27,
+        }
+
+        /// <summary>FPS モードを有効化するシーンリスト</summary>
+        private static int[] EnableFpsScenes = {
+            (int)Scene.SceneYotogi,
+            (int)Scene.SceneADV,
+            (int)Scene.SceneRecollection,
+        };
+
+        /// <summary>Chu-B Lip で FPS モードを有効化するシーンリスト</summary>
+        private static int[] EnableFpsScenesChuB = {
+            (int)Scene.SceneYotogi_ChuB,
+        };
+
+        /// <summary>Hide UI モードを有効化するシーンリスト</summary>
+        private static int[] EnableHideUIScenes = {
+            (int)Scene.SceneEdit,
+            (int)Scene.SceneYotogi,
+            (int)Scene.SceneADV,
+            (int)Scene.SceneRecollection,
+            (int)Scene.ScenePhotoMode,
+        };
+
+        /// <summary>Chu-B Lip で Hide UI モードを有効化するシーンリスト</summary>
+        private static int[] EnableHideUIScenesChuB = {
+            (int)Scene.SceneYotogi_ChuB,
+        };
+
         //移動関係キー設定
         private KeyCode bgLeftMoveKey = KeyCode.LeftArrow;
         private KeyCode bgRightMoveKey = KeyCode.RightArrow;
@@ -214,12 +316,12 @@ namespace CM3D2CameraUtility
                 defaultFOV = Camera.main.fieldOfView;
             }
 
-            if (level == 5)
+            if (sceneLevel == (int)Scene.SceneEdit)
             {
                 GameObject uiRoot = GameObject.Find("/UI Root");
                 profilePanel = uiRoot.transform.Find("ProfilePanel").gameObject;
             }
-            else if (level == 12)
+            else if (sceneLevel == (int)Scene.SceneUserEdit)
             {
                 GameObject uiRoot = GameObject.Find("/UI Root");
                 profilePanel = uiRoot.transform.Find("UserEditPanel").gameObject;
@@ -278,7 +380,7 @@ namespace CM3D2CameraUtility
 
         private void FirstPersonCamera()
         {
-            if ((chubLip && sceneLevel == 10) || sceneLevel == 14 || sceneLevel == 15 || sceneLevel == 24)
+            if ((chubLip && EnableFpsScenesChuB.Contains(sceneLevel)) || EnableFpsScenes.Contains(sceneLevel))
             {
                 if (!manHead)
                 {
@@ -561,7 +663,7 @@ namespace CM3D2CameraUtility
         {
             if (Input.GetKeyDown(hideUIToggleKey))
             {
-                if (sceneLevel == 5 || sceneLevel == 14 || sceneLevel == 15)
+                if ((chubLip && EnableHideUIScenesChuB.Contains(sceneLevel)) || EnableHideUIScenes.Contains(sceneLevel))
                 {
                     var field = GameMain.Instance.MainCamera.GetType().GetField("m_eFadeState", BindingFlags.GetField | BindingFlags.NonPublic | BindingFlags.Instance);
 
@@ -582,7 +684,7 @@ namespace CM3D2CameraUtility
 
         public void Update()
         {
-            if (sceneLevel == 5 || sceneLevel == 12)
+            if (sceneLevel == (int)Scene.SceneEdit || sceneLevel == (int)Scene.SceneUserEdit)
             {
                 if (profilePanel != null && profilePanel.activeSelf)
                 {
