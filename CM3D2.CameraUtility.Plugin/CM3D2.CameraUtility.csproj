@@ -7,8 +7,8 @@
     <ProjectGuid>{098B8677-FBE8-4D0C-9483-2D5DBE022732}</ProjectGuid>
     <OutputType>Library</OutputType>
     <AppDesignerFolder>Properties</AppDesignerFolder>
-    <RootNamespace>CM3D2CameraUtility</RootNamespace>
-    <AssemblyName>CM3D2CameraUtility.Plugin</AssemblyName>
+    <RootNamespace>CM3D2.CameraUtility.Plugin</RootNamespace>
+    <AssemblyName>CM3D2.CameraUtility.Plugin</AssemblyName>
     <TargetFrameworkVersion>v3.5</TargetFrameworkVersion>
     <FileAlignment>512</FileAlignment>
     <TargetFrameworkProfile />
@@ -50,7 +50,7 @@
     </Reference>
   </ItemGroup>
   <ItemGroup>
-    <Compile Include="CM3D2CameraUtility.Plugin.cs" />
+    <Compile Include="CM3D2.CameraUtility.Plugin.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
   </ItemGroup>
   <Import Project="$(MSBuildToolsPath)\Microsoft.CSharp.targets" />

@@ -3,7 +3,7 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio 2013
 VisualStudioVersion = 12.0.31101.0
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CM3D2CameraUtility", "CM3D2CameraUtility.Plugin\CM3D2CameraUtility.csproj", "{098B8677-FBE8-4D0C-9483-2D5DBE022732}"
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CM3D2.CameraUtility", "CM3D2.CameraUtility.Plugin\CM3D2.CameraUtility.csproj", "{098B8677-FBE8-4D0C-9483-2D5DBE022732}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution

@@ -39,7 +39,7 @@ using UnityEngine;
 using UnityInjector;
 using UnityInjector.Attributes;
 
-namespace CM3D2CameraUtility
+namespace CM3D2.CameraUtility.Plugin
 {
     [PluginFilter("CM3D2x64"),
     PluginFilter("CM3D2x86"),
