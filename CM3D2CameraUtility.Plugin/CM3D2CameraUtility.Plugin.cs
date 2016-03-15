@@ -32,6 +32,7 @@
 using System;
 using System.Collections;
 using System.Collections.Generic;
+using System.ComponentModel;
 using System.Reflection;
 using System.Linq;
 using UnityEngine;
@@ -152,6 +153,7 @@ namespace CM3D2CameraUtility
             (int)Scene.SceneYotogi_ChuB,
         };
 
+        /// <summary>モディファイアキー</summary>
         private enum ModifierKey
         {
             None = 0,
@@ -161,59 +163,96 @@ namespace CM3D2CameraUtility
         }
 
         #endregion
+        #region Configuration
+
+        /// <summary>キー設定</summary>
+        class KeyConfig
+        {
+            //移動関係キー設定
+            public KeyCode bgLeftMove = KeyCode.LeftArrow;
+            public KeyCode bgRightMove = KeyCode.RightArrow;
+            public KeyCode bgForwardMove = KeyCode.UpArrow;
+            public KeyCode bgBackMove = KeyCode.DownArrow;
+            public KeyCode bgUpMove = KeyCode.PageUp;
+            public KeyCode bgDownMove = KeyCode.PageDown;
+            public KeyCode bgLeftRotate = KeyCode.Delete;
+            public KeyCode bgRightRotate = KeyCode.End;
+            public KeyCode bgLeftPitch = KeyCode.Insert;
+            public KeyCode bgRightPitch = KeyCode.Home;
+            public KeyCode bgInitialize = KeyCode.Backspace;
+
+            //カメラ操作関係キー設定
+            public KeyCode cameraLeftPitch = KeyCode.Period;
+            public KeyCode cameraRightPitch = KeyCode.Backslash;
+            public KeyCode cameraPitchInitialize = KeyCode.Slash;
+            public KeyCode cameraFoVPlus = KeyCode.RightBracket;
+
+            //Equalsになっているが日本語キーボードだとセミコロン
+            public KeyCode cameraFoVMinus = KeyCode.Equals;
+
+            //Semicolonになっているが日本語キーボードだとコロン
+            public KeyCode cameraFoVInitialize = KeyCode.Semicolon;
+
+            //こっち見てキー設定
+            public KeyCode eyetoCamToggle = KeyCode.G;
+            public KeyCode eyetoCamChange = KeyCode.T;
+
+            //UI表示トグルキー設定
+            public KeyCode hideUIToggle = KeyCode.Tab;
+
+            //FPSモード切替キー設定
+            public KeyCode cameraFPSModeToggle = KeyCode.F;
+
+            //モディファイアキー設定
+            public ModifierKey bgSpeedDownModifier = ModifierKey.Shift;
+            public ModifierKey bgResetModifier = ModifierKey.Alt;
+        }
+
+        /// <summary>OVR用キー設定</summary>
+        class OVRKeyConfig : KeyConfig
+        {
+            public OVRKeyConfig()
+            {
+                //移動関係キー設定
+                bgLeftMove = KeyCode.J;
+                bgRightMove = KeyCode.L;
+                bgForwardMove = KeyCode.I;
+                bgBackMove = KeyCode.K;
+                bgUpMove = KeyCode.Alpha0;
+                bgDownMove = KeyCode.P;
+                bgLeftRotate = KeyCode.U;
+                bgRightRotate = KeyCode.O;
+                bgLeftPitch = KeyCode.Alpha8;
+                bgRightPitch = KeyCode.Alpha9;
+                bgInitialize = KeyCode.Backspace;
+            }
+        }
+
+        /// <summary>カメラ設定</summary>
+        class CameraConfig
+        {
+            public float fpsModeFoV = 60f;
+
+            public float cameraRotateSpeed = 60f;
+            public float cameraFOVChangeSpeed = 15f;
+            public float floorMoveSpeed = 3f;
+            public float maidRotateSpeed = 120f;
+
+            public float fpsOffsetForward = 0.02f;
+            public float fpsOffsetUp = -0.06f;
+            public float fpsOffsetRight = 0f;
+
+            ////以下の数値だと男の目の付近にカメラが移動しますが
+            ////うちのメイドはデフォで顔ではなく喉元見てるのであんまりこっち見てくれません
+            //public float fpsOffsetForward = 0.1f;
+            //public float fpsOffsetUp = 0.12f;
+        }
+
+        #endregion
         #region Variables
 
-        //移動関係キー設定
-        private KeyCode bgLeftMoveKey = KeyCode.LeftArrow;
-        private KeyCode bgRightMoveKey = KeyCode.RightArrow;
-        private KeyCode bgForwardMoveKey = KeyCode.UpArrow;
-        private KeyCode bgBackMoveKey = KeyCode.DownArrow;
-        private KeyCode bgUpMoveKey = KeyCode.PageUp;
-        private KeyCode bgDownMoveKey = KeyCode.PageDown;
-        private KeyCode bgLeftRotateKey = KeyCode.Delete;
-        private KeyCode bgRightRotateKey = KeyCode.End;
-        private KeyCode bgLeftPitchKey = KeyCode.Insert;
-        private KeyCode bgRightPitchKey = KeyCode.Home;
-        private KeyCode bgInitializeKey = KeyCode.Backspace;
-
-        //VR用移動関係キー設定
-        private KeyCode bgLeftMoveKeyVR = KeyCode.J;
-        private KeyCode bgRightMoveKeyVR = KeyCode.L;
-        private KeyCode bgForwardMoveKeyVR = KeyCode.I;
-        private KeyCode bgBackMoveKeyVR = KeyCode.K;
-        private KeyCode bgUpMoveKeyVR = KeyCode.Alpha0;
-        private KeyCode bgDownMoveKeyVR = KeyCode.P;
-        private KeyCode bgLeftRotateKeyVR = KeyCode.U;
-        private KeyCode bgRightRotateKeyVR = KeyCode.O;
-        private KeyCode bgLeftPitchKeyVR = KeyCode.Alpha8;
-        private KeyCode bgRightPitchKeyVR = KeyCode.Alpha9;
-        private KeyCode bgInitializeKeyVR = KeyCode.Backspace;
-
-        //カメラ操作関係キー設定
-        private KeyCode cameraLeftPitchKey = KeyCode.Period;
-        private KeyCode cameraRightPitchKey = KeyCode.Backslash;
-        private KeyCode cameraPitchInitializeKey = KeyCode.Slash;
-        private KeyCode cameraFoVPlusKey = KeyCode.RightBracket;
-
-        //Equalsになっているが日本語キーボードだとセミコロン
-        private KeyCode cameraFoVMinusKey = KeyCode.Equals;
-
-        //Semicolonになっているが日本語キーボードだとコロン
-        private KeyCode cameraFoVInitializeKey = KeyCode.Semicolon;
-
-        //こっち見てキー設定
-        private KeyCode eyetoCamToggleKey = KeyCode.G;
-        private KeyCode eyetoCamChangeKey = KeyCode.T;
-
-        //夜伽UI消しキー設定
-        private KeyCode hideUIToggleKey = KeyCode.Tab;
-
-        //FPSモード切替キー設定
-        private KeyCode cameraFPSModeToggleKey = KeyCode.F;
-
-        //モディファイアキー設定
-        private ModifierKey bgSpeedDownModifier = ModifierKey.Shift;
-        private ModifierKey bgResetModifier = ModifierKey.Alt;
+        private KeyConfig keys;
+        private CameraConfig cameraConfig;
 
         //オブジェクト
         private Maid maid;
@@ -230,23 +269,8 @@ namespace CM3D2CameraUtility
         private bool eyetoCamToggle = false;
 
         private float defaultFOV = 35f;
-        private float fpsModeFoV = 60f;
-
-        private float cameraRotateSpeed = 60f;
-        private float cameraFOVChangeSpeed = 15f;
-        private float floorMoveSpeed = 3f;
-        private float maidRotateSpeed = 120f;
 
         private int sceneLevel;
-
-        private float fpsOffsetForward = 0.02f;
-        private float fpsOffsetUp = -0.06f;
-        private float fpsOffsetRight = 0f;
-
-        ////以下の数値だと男の目の付近にカメラが移動しますが
-        ////うちのメイドはデフォで顔ではなく喉元見てるのであんまりこっち見てくれません
-        //private float fpsOffsetForward = 0.1f;
-        //private float fpsOffsetUp = 0.12f;
 
         private Vector3 oldPos;
         private Vector3 oldTargetPos;
@@ -277,19 +301,14 @@ namespace CM3D2CameraUtility
             chubLip = path.Contains("CM3D2OHx64");
             occulusVR = path.Contains("CM3D2VRx64");
 
+            keys = GetConfig<KeyConfig>("Keys");
+            OVRKeyConfig ovrKeys = GetConfig<OVRKeyConfig>("OVRKeys");
+            cameraConfig = GetConfig<CameraConfig>("Camera");
+            SaveConfig();
+
             if (occulusVR)
             {
-                bgLeftMoveKey = bgLeftMoveKeyVR;
-                bgRightMoveKey = bgRightMoveKeyVR;
-                bgForwardMoveKey = bgForwardMoveKeyVR;
-                bgBackMoveKey = bgBackMoveKeyVR;
-                bgUpMoveKey = bgUpMoveKeyVR;
-                bgDownMoveKey = bgDownMoveKeyVR;
-                bgLeftRotateKey = bgLeftRotateKeyVR;
-                bgRightRotateKey = bgRightRotateKeyVR;
-                bgLeftPitchKey = bgLeftPitchKeyVR;
-                bgRightPitchKey = bgRightPitchKeyVR;
-                bgInitializeKey = bgInitializeKeyVR;
+                keys = ovrKeys;
             }
         }
 
@@ -524,7 +543,7 @@ namespace CM3D2CameraUtility
 
             if (fpsMode)
             {
-                Camera.main.fieldOfView = fpsModeFoV;
+                Camera.main.fieldOfView = cameraConfig.fpsModeFoV;
                 eyetoCamToggle = false;
                 maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
 
@@ -564,9 +583,9 @@ namespace CM3D2CameraUtility
             }
 
             Vector3 cameraPos = manHead.transform.position
-                + manHead.transform.up * fpsOffsetUp
-                + manHead.transform.right * fpsOffsetRight
-                + manHead.transform.forward * fpsOffsetForward;
+                + manHead.transform.up * cameraConfig.fpsOffsetUp
+                + manHead.transform.right * cameraConfig.fpsOffsetRight
+                + manHead.transform.forward * cameraConfig.fpsOffsetForward;
             if (bFpsShakeCorrection)
             {
                 cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
@@ -582,18 +601,18 @@ namespace CM3D2CameraUtility
 
         private void UpdateCameraFOV()
         {
-            if (Input.GetKey(cameraFoVInitializeKey))
+            if (Input.GetKey(keys.cameraFoVInitialize))
             {
                 Camera.main.fieldOfView = defaultFOV;
                 return;
             }
 
-            float fovChangeSpeed = cameraFOVChangeSpeed * Time.deltaTime;
-            if (Input.GetKey(cameraFoVMinusKey))
+            float fovChangeSpeed = cameraConfig.cameraFOVChangeSpeed * Time.deltaTime;
+            if (Input.GetKey(keys.cameraFoVMinus))
             {
                 Camera.main.fieldOfView += -fovChangeSpeed;
             }
-            if (Input.GetKey(cameraFoVPlusKey))
+            if (Input.GetKey(keys.cameraFoVPlus))
             {
                 Camera.main.fieldOfView += fovChangeSpeed;
             }
@@ -603,7 +622,7 @@ namespace CM3D2CameraUtility
         {
             Assert.IsNotNull(mainCameraTransform);
 
-            if (Input.GetKey(cameraPitchInitializeKey))
+            if (Input.GetKey(keys.cameraPitchInitialize))
             {
                 mainCameraTransform.eulerAngles = new Vector3(
                         mainCameraTransform.rotation.eulerAngles.x,
@@ -612,12 +631,12 @@ namespace CM3D2CameraUtility
                 return;
             }
 
-            float rotateSpeed = cameraRotateSpeed * Time.deltaTime;
-            if (Input.GetKey(cameraLeftPitchKey))
+            float rotateSpeed = cameraConfig.cameraRotateSpeed * Time.deltaTime;
+            if (Input.GetKey(keys.cameraLeftPitch))
             {
                 mainCameraTransform.Rotate(0, 0, rotateSpeed);
             }
-            if (Input.GetKey(cameraRightPitchKey))
+            if (Input.GetKey(keys.cameraRightPitch))
             {
                 mainCameraTransform.Rotate(0, 0, -rotateSpeed);
             }
@@ -627,7 +646,7 @@ namespace CM3D2CameraUtility
         {
             Assert.IsNotNull(bg);
 
-            if (Input.GetKeyDown(bgInitializeKey))
+            if (Input.GetKeyDown(keys.bgInitialize))
             {
                 bg.localPosition = Vector3.zero;
                 bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
@@ -637,22 +656,22 @@ namespace CM3D2CameraUtility
                 return;
             }
 
-            if (IsModKeyPressing(bgResetModifier))
+            if (IsModKeyPressing(keys.bgResetModifier))
             {
-                if (Input.GetKey(bgLeftRotateKey) || Input.GetKey(bgRightRotateKey))
+                if (Input.GetKey(keys.bgLeftRotate) || Input.GetKey(keys.bgRightRotate))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
                 }
-                if (Input.GetKey(bgLeftPitchKey) || Input.GetKey(bgRightPitchKey))
+                if (Input.GetKey(keys.bgLeftPitch) || Input.GetKey(keys.bgRightPitch))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.forward, -bg.rotation.eulerAngles.z);
                     bg.RotateAround(maidTransform.position, Vector3.right, -bg.rotation.eulerAngles.x);
                 }
-                if (Input.GetKey(bgLeftMoveKey) || Input.GetKey(bgRightMoveKey) || Input.GetKey(bgBackMoveKey) || Input.GetKey(bgForwardMoveKey))
+                if (Input.GetKey(keys.bgLeftMove) || Input.GetKey(keys.bgRightMove) || Input.GetKey(keys.bgBackMove) || Input.GetKey(keys.bgForwardMove))
                 {
                     bg.localPosition = new Vector3(0f, bg.localPosition.y, 0f);
                 }
-                if (Input.GetKey(bgUpMoveKey) || Input.GetKey(bgDownMoveKey))
+                if (Input.GetKey(keys.bgUpMove) || Input.GetKey(keys.bgDownMove))
                 {
                     bg.localPosition = new Vector3(bg.localPosition.x, 0f, bg.localPosition.z);
                 }
@@ -664,34 +683,34 @@ namespace CM3D2CameraUtility
             Vector3 cameraUp = mainCameraTransform.TransformDirection(Vector3.up);
             Vector3 direction = Vector3.zero;
 
-            float moveSpeed = floorMoveSpeed * Time.deltaTime;
-            float rotateSpeed = maidRotateSpeed * Time.deltaTime;
-            if (IsModKeyPressing(bgSpeedDownModifier))
+            float moveSpeed = cameraConfig.floorMoveSpeed * Time.deltaTime;
+            float rotateSpeed = cameraConfig.maidRotateSpeed * Time.deltaTime;
+            if (IsModKeyPressing(keys.bgSpeedDownModifier))
             {
                 moveSpeed *= 0.1f;
                 rotateSpeed *= 0.1f;
             }
 
-            if (Input.GetKey(bgLeftMoveKey))
+            if (Input.GetKey(keys.bgLeftMove))
             {
                 direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * moveSpeed;
             }
-            if (Input.GetKey(bgRightMoveKey))
+            if (Input.GetKey(keys.bgRightMove))
             {
                 direction += new Vector3(cameraRight.x, 0f, cameraRight.z) * -moveSpeed;
             }
-            if (Input.GetKey(bgBackMoveKey))
+            if (Input.GetKey(keys.bgBackMove))
             {
                 direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * moveSpeed;
             }
-            if (Input.GetKey(bgForwardMoveKey))
+            if (Input.GetKey(keys.bgForwardMove))
             {
                 direction += new Vector3(cameraForward.x, 0f, cameraForward.z) * -moveSpeed;
             }
-            if (Input.GetKey(bgUpMoveKey))
+            if (Input.GetKey(keys.bgUpMove))
             {
                 direction += new Vector3(0f, cameraUp.y, 0f) * -moveSpeed; }
-            if (Input.GetKey(bgDownMoveKey))
+            if (Input.GetKey(keys.bgDownMove))
             {
                 direction += new Vector3(0f, cameraUp.y, 0f) * moveSpeed;
             }
@@ -699,19 +718,19 @@ namespace CM3D2CameraUtility
             //bg.position += direction;
             bg.localPosition += direction;
 
-            if (Input.GetKey(bgLeftRotateKey))
+            if (Input.GetKey(keys.bgLeftRotate))
             {
                 bg.RotateAround(maidTransform.transform.position, Vector3.up, rotateSpeed);
             }
-            if (Input.GetKey(bgRightRotateKey))
+            if (Input.GetKey(keys.bgRightRotate))
             {
                 bg.RotateAround(maidTransform.transform.position, Vector3.up, -rotateSpeed);
             }
-            if (Input.GetKey(bgLeftPitchKey))
+            if (Input.GetKey(keys.bgLeftPitch))
             {
                 bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), rotateSpeed);
             }
-            if (Input.GetKey(bgRightPitchKey))
+            if (Input.GetKey(keys.bgRightPitch))
             {
                 bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), -rotateSpeed);
             }
@@ -780,7 +799,7 @@ namespace CM3D2CameraUtility
                 {
                     yield return new WaitForSeconds(stateCheckInterval);
                 }
-                if (Input.GetKeyDown(cameraFPSModeToggleKey))
+                if (Input.GetKeyDown(keys.cameraFPSModeToggle))
                 {
                     OVRToggleFirstPersonCameraMode();
                 }
@@ -801,7 +820,7 @@ namespace CM3D2CameraUtility
                 {
                     yield return new WaitForSeconds(stateCheckInterval);
                 }
-                if (Input.GetKeyDown(cameraFPSModeToggleKey))
+                if (Input.GetKeyDown(keys.cameraFPSModeToggle))
                 {
                     ToggleFirstPersonCameraMode();
                 }
@@ -835,11 +854,11 @@ namespace CM3D2CameraUtility
         {
             while (true)
             {
-                if (Input.GetKeyDown(eyetoCamChangeKey))
+                if (Input.GetKeyDown(keys.eyetoCamChange))
                 {
                     ChangeEyeToCam();
                 }
-                if (Input.GetKeyDown(eyetoCamToggleKey))
+                if (Input.GetKeyDown(keys.eyetoCamToggle))
                 {
                     ToggleEyeToCam();
                 }
@@ -851,7 +870,7 @@ namespace CM3D2CameraUtility
         {
             while (true)
             {
-                if (Input.GetKeyDown(hideUIToggleKey))
+                if (Input.GetKeyDown(keys.hideUIToggle))
                 {
                     if (GetFadeState() == 0)
                     {
@@ -859,6 +878,60 @@ namespace CM3D2CameraUtility
                     }
                 }
                 yield return null;
+            }
+        }
+
+        #endregion
+        #region Configuration Methods
+
+        private T GetConfig<T>(string sectionName)
+        {
+            T config = (T)Activator.CreateInstance(typeof(T));
+            return GetConfig(sectionName, config);
+        }
+
+        private T GetConfig<T>(string sectionName, T config)
+        {
+            Assert.IsNotNull(sectionName);
+            Assert.IsNotNull(config);
+            var section = Preferences[sectionName];
+            foreach (var field in typeof(T).GetFields())
+            {
+                var converter = TypeDescriptor.GetConverter(field.FieldType);
+                string keyName = field.Name;
+                string strValue = section[keyName].RawValue;
+                if (strValue == null)
+                {
+                    var value = field.GetValue(config);
+                    section[keyName].Value = converter.ConvertToString(value);
+                }
+                else
+                {
+                    try
+                    {
+                        var value = converter.ConvertFromString(strValue);
+                        field.SetValue(config, value);
+                    }
+                    catch
+                    {
+                        Debug.LogWarning(string.Format("{0}: Config read error: [{1}]{2}", Name, sectionName, keyName));
+                    }
+                }
+            }
+            return config;
+        }
+
+        private void SetConfig<T>(string sectionName, T config)
+        {
+            Assert.IsNotNull(sectionName);
+            Assert.IsNotNull(config);
+            var section = Preferences[sectionName];
+            foreach (var field in typeof(T).GetFields())
+            {
+                string keyName = field.Name;
+                var value = field.GetValue(config);
+                var converter = TypeDescriptor.GetConverter(typeof(T));
+                section[keyName].Value = converter.ConvertToString(value);
             }
         }
 
