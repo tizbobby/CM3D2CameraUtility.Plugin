@@ -265,6 +265,8 @@ namespace CM3D2CameraUtility
                 public float cameraRotateSpeed = 60f;
                 [Description("視野 変更速度")]
                 public float cameraFoVChangeSpeed = 15f;
+                [Description("低速移動モード倍率")]
+                public float speedMagnification = 0.1f;
 
                 [Description("FPSモード 視野")]
                 public float fpsModeFoV = 60f;
@@ -649,6 +651,11 @@ namespace CM3D2CameraUtility
             }
 
             float fovChangeSpeed = config.Camera.cameraFoVChangeSpeed * Time.deltaTime;
+            if (IsModKeyPressing(Keys.speedDownModifier))
+            {
+                fovChangeSpeed *= config.Camera.speedMagnification;
+            }
+
             if (Input.GetKey(Keys.cameraFoVMinus))
             {
                 Camera.main.fieldOfView += -fovChangeSpeed;
@@ -673,6 +680,11 @@ namespace CM3D2CameraUtility
             }
 
             float rotateSpeed = config.Camera.cameraRotateSpeed * Time.deltaTime;
+            if (IsModKeyPressing(Keys.speedDownModifier))
+            {
+                rotateSpeed *= config.Camera.speedMagnification;
+            }
+
             if (Input.GetKey(Keys.cameraLeftRoll))
             {
                 mainCameraTransform.Rotate(0, 0, rotateSpeed);
@@ -728,8 +740,8 @@ namespace CM3D2CameraUtility
             float rotateSpeed = config.Camera.bgRotateSpeed * Time.deltaTime;
             if (IsModKeyPressing(Keys.speedDownModifier))
             {
-                moveSpeed *= 0.1f;
-                rotateSpeed *= 0.1f;
+                moveSpeed *= config.Camera.speedMagnification;
+                rotateSpeed *= config.Camera.speedMagnification;
             }
 
             if (Input.GetKey(Keys.bgLeftMove))
