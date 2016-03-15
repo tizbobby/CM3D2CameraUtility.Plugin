@@ -18,10 +18,10 @@ set "CSC=%CSC_PATH%\csc.exe"
 
 
 set TYPE=/t:library
-set TARGET=CM3D2CameraUtility.Plugin.dll
+set TARGET=CM3D2.CameraUtility.Plugin.dll
 set SRCS=^
-  CM3D2CameraUtility.Plugin\Properties\AssemblyInfo.cs ^
-  CM3D2CameraUtility.Plugin\CM3D2CameraUtility.Plugin.cs
+  CM3D2.CameraUtility.Plugin\Properties\AssemblyInfo.cs ^
+  CM3D2.CameraUtility.Plugin\CM3D2.CameraUtility.Plugin.cs
 set CSOPT=/optimize+
 set CSLIB=^
   /lib:"%REIPATCHER_DIR%" ^
