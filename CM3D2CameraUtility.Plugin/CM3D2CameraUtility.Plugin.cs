@@ -224,11 +224,9 @@ namespace CM3D2CameraUtility
                 GameObject uiRoot = GameObject.Find("/UI Root");
                 profilePanel = uiRoot.transform.Find("UserEditPanel").gameObject;
             }
-            else if (level == 15)
+            else
             {
-                //profilePanelが何をしているのかよくわからないので適当
-                GameObject uiRoot = GameObject.Find("__GameMain__/SystemUI Root");
-                profilePanel = uiRoot.transform.Find("ConfigPanel").gameObject;
+                profilePanel = null;
             }
             cameraOffset = Vector3.zero;
             bFpsShakeCorrection = false;
@@ -584,37 +582,11 @@ namespace CM3D2CameraUtility
 
         public void Update()
         {
-            if (sceneLevel == 5)
+            if (sceneLevel == 5 || sceneLevel == 12)
             {
-                if (profilePanel.activeSelf)
+                if (profilePanel != null && profilePanel.activeSelf)
                 {
-                    allowUpdate = false;
-                }
-                else
-                {
-                    allowUpdate = true;
-                }
-            }
-            else if (sceneLevel == 12)
-            {
-                if (profilePanel.activeSelf)
-                {
-                    allowUpdate = false;
-                }
-                else
-                {
-                    allowUpdate = true;
-                }
-            }
-            else if (sceneLevel == 15)
-            {
-                if (profilePanel.activeSelf)
-                {
-                    allowUpdate = false;
-                }
-                else
-                {
-                    allowUpdate = true;
+                    return;
                 }
             }
 
