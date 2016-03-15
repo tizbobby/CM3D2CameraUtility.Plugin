@@ -162,6 +162,9 @@ namespace CM3D2CameraUtility
             Ctrl
         }
 
+        /// <summary>状態変化チェック間隔</summary>
+        private const float stateCheckInterval = 1f;
+
         #endregion
         #region Configuration
 
@@ -190,19 +193,19 @@ namespace CM3D2CameraUtility
                 [Description("背景(メイド) 右回転")]
                 public KeyCode bgRightRotate = KeyCode.End;
                 [Description("背景 左ロール")]
-                public KeyCode bgLeftPitch = KeyCode.Insert;
+                public KeyCode bgLeftRoll = KeyCode.Insert;
                 [Description("背景 右ロール")]
-                public KeyCode bgRightPitch = KeyCode.Home;
+                public KeyCode bgRightRoll = KeyCode.Home;
                 [Description("背景 初期化")]
                 public KeyCode bgInitialize = KeyCode.Backspace;
 
                 //カメラ操作関係キー設定
                 [Description("カメラ 左ロール")]
-                public KeyCode cameraLeftPitch = KeyCode.Period;
+                public KeyCode cameraLeftRoll = KeyCode.Period;
                 [Description("カメラ 右ロール")]
-                public KeyCode cameraRightPitch = KeyCode.Backslash;
+                public KeyCode cameraRightRoll = KeyCode.Backslash;
                 [Description("カメラ 水平")]
-                public KeyCode cameraPitchInitialize = KeyCode.Slash;
+                public KeyCode cameraRollInitialize = KeyCode.Slash;
                 [Description("カメラ 視野拡大")]
                 public KeyCode cameraFoVPlus = KeyCode.RightBracket;
                 [Description("カメラ 視野縮小 (初期値 Equals は日本語キーボードでは [; + れ])")]
@@ -226,9 +229,9 @@ namespace CM3D2CameraUtility
 
                 //モディファイアキー設定
                 [Description("低速移動モード (押下中は移動速度が減少)")]
-                public ModifierKey bgSpeedDownModifier = ModifierKey.Shift;
+                public ModifierKey speedDownModifier = ModifierKey.Shift;
                 [Description("初期化モード (押下中に移動キーを押すと対象の軸が初期化)")]
-                public ModifierKey bgResetModifier = ModifierKey.Alt;
+                public ModifierKey initializeModifier = ModifierKey.Alt;
             }
 
             [Description("VRモード用キー設定")]
@@ -245,8 +248,8 @@ namespace CM3D2CameraUtility
                     bgDownMove = KeyCode.P;
                     bgLeftRotate = KeyCode.U;
                     bgRightRotate = KeyCode.O;
-                    bgLeftPitch = KeyCode.Alpha8;
-                    bgRightPitch = KeyCode.Alpha9;
+                    bgLeftRoll = KeyCode.Alpha8;
+                    bgRightRoll = KeyCode.Alpha9;
                     bgInitialize = KeyCode.Backspace;
                 }
             }
@@ -254,14 +257,14 @@ namespace CM3D2CameraUtility
             [Description("カメラ設定")]
             public class CameraConfig
             {
+                [Description("背景 移動速度")]
+                public float bgMoveSpeed = 3f;
+                [Description("背景(メイド) 回転速度")]
+                public float bgRotateSpeed = 120f;
                 [Description("カメラ 回転速度")]
                 public float cameraRotateSpeed = 60f;
                 [Description("視野 変更速度")]
-                public float cameraFOVChangeSpeed = 15f;
-                [Description("背景 移動速度")]
-                public float floorMoveSpeed = 3f;
-                [Description("背景(メイド) 回転速度")]
-                public float maidRotateSpeed = 120f;
+                public float cameraFoVChangeSpeed = 15f;
 
                 [Description("FPSモード 視野")]
                 public float fpsModeFoV = 60f;
@@ -289,6 +292,7 @@ namespace CM3D2CameraUtility
         #endregion
         #region Variables
 
+        //設定
         private CameraUtilityConfig config;
 
         //オブジェクト
@@ -299,32 +303,29 @@ namespace CM3D2CameraUtility
         private Transform bg;
         private GameObject manHead;
         private GameObject uiObject;
+        private GameObject profilePanel;
 
-        private bool occulusVR = false;
-        private bool chubLip = false;
+        //状態フラグ
+        private bool isOVR = false;
+        private bool isChuBLip = false;
         private bool fpsMode = false;
+        private bool fpsShakeCorrection = false;
         private bool eyetoCamToggle = false;
-
-        private float defaultFOV = 35f;
-
+        private int eyeToCamIndex = 0;
+        private bool uiVisible = true;
         private int sceneLevel;
 
+        //状態退避変数
+        private float defaultFoV = 35f;
         private Vector3 oldPos;
         private Vector3 oldTargetPos;
         private float oldDistance;
         private float oldFoV;
         private Quaternion oldRotation;
-
         private bool oldEyetoCamToggle;
-        private int eyeToCamIndex = 0;
-
-        private bool uiVisible = true;
-        private GameObject profilePanel;
-
         private Vector3 cameraOffset = Vector3.zero;
-        private bool bFpsShakeCorrection = false;
 
-        private float stateCheckInterval = 1f;
+        //コルーチン一覧
         private LinkedList<Coroutine> mainCoroutines = new LinkedList<Coroutine>();
 
         #endregion
@@ -335,8 +336,8 @@ namespace CM3D2CameraUtility
             GameObject.DontDestroyOnLoad(this);
 
             string path = Application.dataPath;
-            chubLip = path.Contains("CM3D2OHx64");
-            occulusVR = path.Contains("CM3D2VRx64");
+            isChuBLip = path.Contains("CM3D2OHx64");
+            isOVR = path.Contains("CM3D2VRx64");
 
             config = CameraUtilityConfig.FromPreferences(Preferences);
             config.SavePreferences();
@@ -366,7 +367,7 @@ namespace CM3D2CameraUtility
         {
             get
             {
-                return occulusVR ? config.OVRKeys : config.Keys;
+                return isOVR ? config.OVRKeys : config.Keys;
             }
         }
 
@@ -387,7 +388,7 @@ namespace CM3D2CameraUtility
             mainCamera = GameMain.Instance.MainCamera;
             manHead = null;
 
-            if (occulusVR)
+            if (isOVR)
             {
                 uiObject = GameObject.Find("ovr_screen");
             }
@@ -398,7 +399,7 @@ namespace CM3D2CameraUtility
                 {
                     uiObject = GameObject.Find("SystemUI Root/Camera");
                 }
-                defaultFOV = Camera.main.fieldOfView;
+                defaultFoV = Camera.main.fieldOfView;
             }
 
             if (sceneLevel == (int)Scene.SceneEdit)
@@ -417,7 +418,7 @@ namespace CM3D2CameraUtility
             }
 
             cameraOffset = Vector3.zero;
-            bFpsShakeCorrection = false;
+            fpsShakeCorrection = false;
             fpsMode = false;
 
             return maid && maidTransform && bg && mainCamera;
@@ -426,9 +427,9 @@ namespace CM3D2CameraUtility
         private void StartMainCoroutines()
         {
             // Start FirstPersonCamera
-            if ((chubLip && EnableFpsScenesChuB.Contains(sceneLevel)) || EnableFpsScenes.Contains(sceneLevel))
+            if ((isChuBLip && EnableFpsScenesChuB.Contains(sceneLevel)) || EnableFpsScenes.Contains(sceneLevel))
             {
-                if (occulusVR)
+                if (isOVR)
                 {
                     mainCoroutines.AddLast(StartCoroutine(OVRFirstPersonCameraCoroutine()));
                 }
@@ -445,15 +446,15 @@ namespace CM3D2CameraUtility
             mainCoroutines.AddLast(StartCoroutine(FloorMoverCoroutine()));
 
             // Start ExtendedCameraHandle
-            if (!occulusVR)
+            if (!isOVR)
             {
                 mainCoroutines.AddLast(StartCoroutine(ExtendedCameraHandleCoroutine()));
             }
 
             // Start HideUI
-            if ((chubLip && EnableHideUIScenesChuB.Contains(sceneLevel)) || EnableHideUIScenes.Contains(sceneLevel))
+            if ((isChuBLip && EnableHideUIScenesChuB.Contains(sceneLevel)) || EnableHideUIScenes.Contains(sceneLevel))
             {
-                if (!occulusVR)
+                if (!isOVR)
                 {
                     mainCoroutines.AddLast(StartCoroutine(HideUICoroutine()));
                 }
@@ -563,15 +564,15 @@ namespace CM3D2CameraUtility
             Assert.IsNotNull(manHead);
             Assert.IsNotNull(mainCameraTransform);
 
-            if (bFpsShakeCorrection)
+            if (fpsShakeCorrection)
             {
-                bFpsShakeCorrection = false;
+                fpsShakeCorrection = false;
                 fpsMode = false;
                 Console.WriteLine("FpsMode = Disable");
             }
-            else if(fpsMode && !bFpsShakeCorrection)
+            else if(fpsMode && !fpsShakeCorrection)
             {
-                bFpsShakeCorrection = true;
+                fpsShakeCorrection = true;
                 Console.WriteLine("FpsMode = Enable : ShakeCorrection = Enable");
             }
             else
@@ -626,7 +627,7 @@ namespace CM3D2CameraUtility
                 + manHead.transform.up * config.Camera.fpsOffsetUp
                 + manHead.transform.right * config.Camera.fpsOffsetRight
                 + manHead.transform.forward * config.Camera.fpsOffsetForward;
-            if (bFpsShakeCorrection)
+            if (fpsShakeCorrection)
             {
                 cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
             }
@@ -639,15 +640,15 @@ namespace CM3D2CameraUtility
             mainCamera.SetDistance(0f, true);
         }
 
-        private void UpdateCameraFOV()
+        private void UpdateCameraFoV()
         {
             if (Input.GetKey(Keys.cameraFoVInitialize))
             {
-                Camera.main.fieldOfView = defaultFOV;
+                Camera.main.fieldOfView = defaultFoV;
                 return;
             }
 
-            float fovChangeSpeed = config.Camera.cameraFOVChangeSpeed * Time.deltaTime;
+            float fovChangeSpeed = config.Camera.cameraFoVChangeSpeed * Time.deltaTime;
             if (Input.GetKey(Keys.cameraFoVMinus))
             {
                 Camera.main.fieldOfView += -fovChangeSpeed;
@@ -658,11 +659,11 @@ namespace CM3D2CameraUtility
             }
         }
 
-        private void UpdateCameraPitch()
+        private void UpdateCameraRotation()
         {
             Assert.IsNotNull(mainCameraTransform);
 
-            if (Input.GetKey(Keys.cameraPitchInitialize))
+            if (Input.GetKey(Keys.cameraRollInitialize))
             {
                 mainCameraTransform.eulerAngles = new Vector3(
                         mainCameraTransform.rotation.eulerAngles.x,
@@ -672,11 +673,11 @@ namespace CM3D2CameraUtility
             }
 
             float rotateSpeed = config.Camera.cameraRotateSpeed * Time.deltaTime;
-            if (Input.GetKey(Keys.cameraLeftPitch))
+            if (Input.GetKey(Keys.cameraLeftRoll))
             {
                 mainCameraTransform.Rotate(0, 0, rotateSpeed);
             }
-            if (Input.GetKey(Keys.cameraRightPitch))
+            if (Input.GetKey(Keys.cameraRightRoll))
             {
                 mainCameraTransform.Rotate(0, 0, -rotateSpeed);
             }
@@ -696,13 +697,13 @@ namespace CM3D2CameraUtility
                 return;
             }
 
-            if (IsModKeyPressing(Keys.bgResetModifier))
+            if (IsModKeyPressing(Keys.initializeModifier))
             {
                 if (Input.GetKey(Keys.bgLeftRotate) || Input.GetKey(Keys.bgRightRotate))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.up, -bg.rotation.eulerAngles.y);
                 }
-                if (Input.GetKey(Keys.bgLeftPitch) || Input.GetKey(Keys.bgRightPitch))
+                if (Input.GetKey(Keys.bgLeftRoll) || Input.GetKey(Keys.bgRightRoll))
                 {
                     bg.RotateAround(maidTransform.position, Vector3.forward, -bg.rotation.eulerAngles.z);
                     bg.RotateAround(maidTransform.position, Vector3.right, -bg.rotation.eulerAngles.x);
@@ -723,9 +724,9 @@ namespace CM3D2CameraUtility
             Vector3 cameraUp = mainCameraTransform.TransformDirection(Vector3.up);
             Vector3 direction = Vector3.zero;
 
-            float moveSpeed = config.Camera.floorMoveSpeed * Time.deltaTime;
-            float rotateSpeed = config.Camera.maidRotateSpeed * Time.deltaTime;
-            if (IsModKeyPressing(Keys.bgSpeedDownModifier))
+            float moveSpeed = config.Camera.bgMoveSpeed * Time.deltaTime;
+            float rotateSpeed = config.Camera.bgRotateSpeed * Time.deltaTime;
+            if (IsModKeyPressing(Keys.speedDownModifier))
             {
                 moveSpeed *= 0.1f;
                 rotateSpeed *= 0.1f;
@@ -766,11 +767,11 @@ namespace CM3D2CameraUtility
             {
                 bg.RotateAround(maidTransform.transform.position, Vector3.up, -rotateSpeed);
             }
-            if (Input.GetKey(Keys.bgLeftPitch))
+            if (Input.GetKey(Keys.bgLeftRoll))
             {
                 bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), rotateSpeed);
             }
-            if (Input.GetKey(Keys.bgRightPitch))
+            if (Input.GetKey(Keys.bgRightRoll))
             {
                 bg.RotateAround(maidTransform.transform.position, new Vector3(cameraForward.x, 0f, cameraForward.z), -rotateSpeed);
             }
@@ -884,8 +885,8 @@ namespace CM3D2CameraUtility
         {
             while (true)
             {
-                UpdateCameraFOV();
-                UpdateCameraPitch();
+                UpdateCameraFoV();
+                UpdateCameraRotation();
                 yield return null;
             }
         }
