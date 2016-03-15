@@ -224,17 +224,18 @@ namespace CM3D2CameraUtility
         private GameObject manHead;
         private GameObject uiObject;
 
-        private float defaultFOV = 35f;
         private bool occulusVR = false;
         private bool chubLip = false;
         private bool fpsMode = false;
         private bool eyetoCamToggle = false;
 
-        private float cameraRotateSpeed = 1f;
-        private float cameraFOVChangeSpeed = 0.25f;
-        private float floorMoveSpeed = 0.05f;
-        private float maidRotateSpeed = 2f;
+        private float defaultFOV = 35f;
         private float fpsModeFoV = 60f;
+
+        private float cameraRotateSpeed = 60f;
+        private float cameraFOVChangeSpeed = 15f;
+        private float floorMoveSpeed = 3f;
+        private float maidRotateSpeed = 120f;
 
         private int sceneLevel;
 
@@ -579,36 +580,46 @@ namespace CM3D2CameraUtility
             mainCamera.SetDistance(0f, true);
         }
 
-        private void UpdateExtendedCameraHandle()
+        private void UpdateCameraFOV()
         {
-            Assert.IsNotNull(mainCameraTransform);
-
-            if (Input.GetKey(cameraFoVMinusKey))
-            {
-                Camera.main.fieldOfView += -cameraFOVChangeSpeed;
-            }
             if (Input.GetKey(cameraFoVInitializeKey))
             {
                 Camera.main.fieldOfView = defaultFOV;
+                return;
+            }
+
+            float fovChangeSpeed = cameraFOVChangeSpeed * Time.deltaTime;
+            if (Input.GetKey(cameraFoVMinusKey))
+            {
+                Camera.main.fieldOfView += -fovChangeSpeed;
             }
             if (Input.GetKey(cameraFoVPlusKey))
             {
-                Camera.main.fieldOfView += cameraFOVChangeSpeed;
+                Camera.main.fieldOfView += fovChangeSpeed;
             }
-            if (Input.GetKey(cameraLeftPitchKey))
-            {
-                mainCameraTransform.Rotate(0, 0, cameraRotateSpeed);
-            }
+        }
+
+        private void UpdateCameraPitch()
+        {
+            Assert.IsNotNull(mainCameraTransform);
+
             if (Input.GetKey(cameraPitchInitializeKey))
             {
                 mainCameraTransform.eulerAngles = new Vector3(
                         mainCameraTransform.rotation.eulerAngles.x,
                         mainCameraTransform.rotation.eulerAngles.y,
                         0f);
+                return;
+            }
+
+            float rotateSpeed = cameraRotateSpeed * Time.deltaTime;
+            if (Input.GetKey(cameraLeftPitchKey))
+            {
+                mainCameraTransform.Rotate(0, 0, rotateSpeed);
             }
             if (Input.GetKey(cameraRightPitchKey))
             {
-                mainCameraTransform.Rotate(0, 0, -cameraRotateSpeed);
+                mainCameraTransform.Rotate(0, 0, -rotateSpeed);
             }
         }
 
@@ -653,8 +664,8 @@ namespace CM3D2CameraUtility
             Vector3 cameraUp = mainCameraTransform.TransformDirection(Vector3.up);
             Vector3 direction = Vector3.zero;
 
-            float moveSpeed = floorMoveSpeed;
-            float rotateSpeed = maidRotateSpeed;
+            float moveSpeed = floorMoveSpeed * Time.deltaTime;
+            float rotateSpeed = maidRotateSpeed * Time.deltaTime;
             if (IsModKeyPressing(bgSpeedDownModifier))
             {
                 moveSpeed *= 0.1f;
@@ -814,7 +825,8 @@ namespace CM3D2CameraUtility
         {
             while (true)
             {
-                UpdateExtendedCameraHandle();
+                UpdateCameraFOV();
+                UpdateCameraPitch();
                 yield return null;
             }
         }
