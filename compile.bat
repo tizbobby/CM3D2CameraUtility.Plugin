@@ -24,9 +24,16 @@ set SRCS=^
   CM3D2CameraUtility.Plugin\CM3D2CameraUtility.Plugin.cs
 set CSOPT=/optimize+
 set CSLIB=^
-  /lib:"%REIPATCHER_DIR%" /r:ReiPatcher.exe /r:mono.cecil.dll /r:mono.cecil.rocks.dll ^
-  /lib:"%UNITY_INJECTOR_DIR%" /r:UnityInjector.dll ^
-  /lib:"%CM3D2_MOD_MANAGED_DIR%" /r:UnityEngine.dll /r:Assembly-CSharp.dll /r:Assembly-CSharp-firstpass.dll
+  /lib:"%REIPATCHER_DIR%" ^
+  /r:ReiPatcher.exe ^
+  /r:mono.cecil.dll ^
+  /r:mono.cecil.rocks.dll ^
+  /lib:"%CM3D2_MOD_MANAGED_DIR%" ^
+  /r:UnityInjector.dll ^
+  /r:UnityEngine.dll ^
+  /r:Assembly-CSharp.dll ^
+  /r:Assembly-CSharp-firstpass.dll ^
+  /r:ExIni.dll
 set OUTDIR=%UNITY_INJECTOR_DIR%
 
 %CSC% %CSOPT% %TYPE% %CSLIB% /out:%OUTDIR%\%TARGET% %SRCS% || exit /b 1
