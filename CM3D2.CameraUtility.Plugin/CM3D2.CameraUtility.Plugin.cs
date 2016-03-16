@@ -882,6 +882,7 @@ namespace CM3D2.CameraUtility.Plugin
                 {
                     UpdateFirstPersonCamera();
                 }
+                yield return null;
             }
         }
 
