@@ -97,7 +97,7 @@ VRモードで追従すると酔いの原因となるので主人公の視点位
 各パネルには折りたたみ機能がありますが、こちらは一括で消し去ります。
 
 
-### 設定の保存
+### 設定ファイル
 
 ゲームを起動すると UnityInjector\Config\CameraUtility.ini が生成されます。
 各操作キーの変更、移動速度などの数値の変更が可能です。
@@ -160,6 +160,12 @@ Sybaris の AutoCompile に対応しています。
 
 
 ## 変更履歴
+
+* 2.1.0.0
+  Author: [Milly](https://github.com/Milly)
+  * ファイル名変更
+  * 設定ファイルに対応
+  * 撮影モードでのUIパネル非表示に対応
 
 * 2.0.1.2-20160220
   Source: [GitHub](https://github.com/MeidoDev/cm3d2-camera-utility)
