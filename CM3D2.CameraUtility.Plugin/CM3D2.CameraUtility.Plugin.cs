@@ -228,9 +228,9 @@ namespace CM3D2.CameraUtility.Plugin
                 public KeyCode cameraFPSModeToggle = KeyCode.F;
 
                 //モディファイアキー設定
-                [Description("低速移動モード (押下中は移動速度が減少)")]
+                [Description("低速移動モード (押下中は移動速度が減少)\n設定値: Shift, Alt, Ctrl")]
                 public ModifierKey speedDownModifier = ModifierKey.Shift;
-                [Description("初期化モード (押下中に移動キーを押すと対象の軸が初期化)")]
+                [Description("初期化モード (押下中に移動キーを押すと対象の軸が初期化)\n設定値: Shift, Alt, Ctrl")]
                 public ModifierKey initializeModifier = ModifierKey.Alt;
             }
 
@@ -285,7 +285,8 @@ namespace CM3D2.CameraUtility.Plugin
             [Description("CM3D2.CameraUtility.Plugin 設定ファイル\n\n"
                        + "カメラ設定")]
             public CameraConfig Camera = new CameraConfig();
-            [Description("通常キー設定")]
+            [Description("通常キー設定\n"
+                       + "設定値: http://docs.unity3d.com/ja/current/ScriptReference/KeyCode.html を参照")]
             public KeyConfig Keys = new KeyConfig();
             [Description("VRモード用キー設定")]
             public OVRKeyConfig OVRKeys = new OVRKeyConfig();
