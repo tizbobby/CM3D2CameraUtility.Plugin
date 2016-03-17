@@ -355,6 +355,7 @@ namespace CM3D2.CameraUtility.Plugin
         public void OnLevelWasLoaded(int level)
         {
             sceneLevel = level;
+            Log("OnLevelWasLoaded: {0}", sceneLevel);
             StopMainCoroutines();
             config.LoadPreferences();
             if (InitializeSceneObjects())
@@ -364,7 +365,7 @@ namespace CM3D2.CameraUtility.Plugin
         }
 
         #endregion
-        #region Private Methods
+        #region Properties
 
         private CameraUtilityConfig.KeyConfig Keys
         {
@@ -382,6 +383,9 @@ namespace CM3D2.CameraUtility.Plugin
                 return profilePanel == null || !profilePanel.activeSelf;
             }
         }
+
+        #endregion
+        #region Private Methods
 
         private bool InitializeSceneObjects()
         {
@@ -571,18 +575,18 @@ namespace CM3D2.CameraUtility.Plugin
             {
                 fpsShakeCorrection = false;
                 fpsMode = false;
-                Console.WriteLine("FpsMode = Disable");
+                Log("FpsMode = Disable");
             }
             else if(fpsMode && !fpsShakeCorrection)
             {
                 fpsShakeCorrection = true;
-                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Enable");
+                Log("FpsMode = Enable, ShakeCorrection = Enable");
             }
             else
             {
                 fpsMode = true;
                 SaveCameraPos();
-                Console.WriteLine("FpsMode = Enable : ShakeCorrection = Disable");
+                Log("FpsMode = Enable, ShakeCorrection = Disable");
             }
 
             if (fpsMode)
@@ -601,7 +605,7 @@ namespace CM3D2.CameraUtility.Plugin
 
                 if (oldTargetPos != cameraTargetPosFromScript)
                 {
-                    Console.WriteLine("Position Changed!");
+                    Log("Position Changed!");
                     oldTargetPos = cameraTargetPosFromScript;
                 }
                 manHead.renderer.enabled = true;
@@ -621,7 +625,7 @@ namespace CM3D2.CameraUtility.Plugin
             Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
             if (oldTargetPos != cameraTargetPosFromScript)
             {
-                Console.WriteLine("Position Changed!");
+                Log("Position Changed!");
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
                 oldTargetPos = cameraTargetPosFromScript;
             }
@@ -805,7 +809,7 @@ namespace CM3D2.CameraUtility.Plugin
                 eyetoCamToggle = true;
             }
             maid.EyeToCamera((Maid.EyeMoveType)eyeToCamIndex, 0f);
-            Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+            Log("EyeToCam:{0}", eyeToCamIndex);
         }
 
         private void ToggleEyeToCam()
@@ -817,13 +821,13 @@ namespace CM3D2.CameraUtility.Plugin
             {
                 maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
                 eyeToCamIndex = 0;
-                Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+                Log("EyeToCam:{0}", eyeToCamIndex);
             }
             else
             {
                 maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0f);
                 eyeToCamIndex = 5;
-                Console.WriteLine("EyeToCam:{0}", eyeToCamIndex);
+                Log("EyeToCam:{0}", eyeToCamIndex);
             }
         }
 
@@ -833,8 +837,13 @@ namespace CM3D2.CameraUtility.Plugin
             if (uiObject)
             {
                 uiObject.SetActive(uiVisible);
-                Console.WriteLine("UIVisible:{0}", uiVisible);
+                Log("UIVisible:{0}", uiVisible);
             }
+        }
+
+        private void Log(string format, params object[] args)
+        {
+            Debug.Log(Name + ": " + string.Format(format, args));
         }
 
         #endregion
