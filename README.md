@@ -161,6 +161,9 @@ Sybaris の AutoCompile に対応しています。
 
 ## 変更履歴
 
+* 2.1.1.0
+  * FPSモードのクラッシュを修正
+
 * 2.1.0.0
   Author: [Milly](https://github.com/Milly)
   * ファイル名変更
