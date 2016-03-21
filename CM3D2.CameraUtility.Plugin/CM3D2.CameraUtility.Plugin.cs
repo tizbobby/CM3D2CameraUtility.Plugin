@@ -320,13 +320,13 @@ namespace CM3D2.CameraUtility.Plugin
 
         //状態退避変数
         private float defaultFoV = 35f;
-        private Vector3 oldPos;
+        private Vector3 oldCameraPos;
         private Vector3 oldTargetPos;
         private float oldDistance;
         private float oldFoV;
         private Quaternion oldRotation;
         private int oldEyeToCamIndex;
-        private Vector3 cameraOffset = Vector3.zero;
+        private Vector3 lastCameraPos = Vector3.zero;
 
         //コルーチン一覧
         private LinkedList<Coroutine> mainCoroutines = new LinkedList<Coroutine>();
@@ -424,7 +424,7 @@ namespace CM3D2.CameraUtility.Plugin
                 profilePanel = null;
             }
 
-            cameraOffset = Vector3.zero;
+            lastCameraPos = Vector3.zero;
             fpsShakeCorrection = false;
             fpsMode = false;
 
@@ -500,7 +500,7 @@ namespace CM3D2.CameraUtility.Plugin
             Assert.IsNotNull(mainCamera);
             Assert.IsNotNull(mainCameraTransform);
 
-            oldPos = mainCamera.GetPos();
+            oldCameraPos = mainCamera.GetPos();
             oldTargetPos = mainCamera.GetTargetPos();
             oldDistance = mainCamera.GetDistance();
             oldRotation = mainCameraTransform.rotation;
@@ -513,7 +513,7 @@ namespace CM3D2.CameraUtility.Plugin
             Assert.IsNotNull(mainCameraTransform);
 
             mainCameraTransform.rotation = oldRotation;
-            mainCamera.SetPos(oldPos);
+            mainCamera.SetPos(oldCameraPos);
             mainCamera.SetTargetPos(oldTargetPos, true);
             mainCamera.SetDistance(oldDistance, true);
             Camera.main.fieldOfView = oldFoV;
@@ -566,51 +566,53 @@ namespace CM3D2.CameraUtility.Plugin
 
         private void ToggleFirstPersonCameraMode()
         {
-            Assert.IsNotNull(maid);
             Assert.IsNotNull(manHead);
-            Assert.IsNotNull(mainCameraTransform);
 
             if (fpsShakeCorrection)
             {
                 fpsShakeCorrection = false;
-                fpsMode = false;
-                Log("FpsMode = Disable");
+                SetFirstPersonCameraMode(false);
             }
-            else if(fpsMode && !fpsShakeCorrection)
+            else if (fpsMode)
             {
                 fpsShakeCorrection = true;
-                Log("FpsMode = Enable, ShakeCorrection = Enable");
             }
             else
             {
-                fpsMode = true;
-                SaveCameraPos();
-                Log("FpsMode = Enable, ShakeCorrection = Disable");
+                SetFirstPersonCameraMode(true);
             }
+            Log("FpsMode = {0}, ShakeCorrection = {1}", fpsMode, fpsShakeCorrection);
+        }
 
+        private void SetFirstPersonCameraMode(bool enable)
+        {
+            if (fpsMode == enable) return;
+
+            Assert.IsNotNull(maid);
+            Assert.IsNotNull(manHead);
+            Assert.IsNotNull(mainCameraTransform);
+
+            fpsMode = enable;
             if (fpsMode)
             {
+                // save status
+                SaveCameraPos();
+                lastCameraPos = oldCameraPos;
                 Camera.main.fieldOfView = config.Camera.fpsModeFoV;
                 oldEyeToCamIndex = eyeToCamIndex;
+                // reset EyeToCam
                 SetEyeToCamToggle(false);
-
+                // setup camera
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
-
+                // hide ManHead
                 manHead.renderer.enabled = false;
             }
             else
             {
-                Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
-
-                if (oldTargetPos != cameraTargetPosFromScript)
-                {
-                    Log("Position Changed!");
-                    oldTargetPos = cameraTargetPosFromScript;
-                }
-                manHead.renderer.enabled = true;
-
+                UpdateFirstPersonCamera();
                 LoadCameraPos();
                 SetEyeToCamIndex(oldEyeToCamIndex);
+                manHead.renderer.enabled = true;
             }
         }
 
@@ -634,14 +636,11 @@ namespace CM3D2.CameraUtility.Plugin
                 + manHead.transform.forward * config.Camera.fpsOffsetForward;
             if (fpsShakeCorrection)
             {
-                cameraOffset = Vector3.Lerp(cameraPos, cameraOffset, 0.9f);
+                cameraPos = Vector3.Lerp(cameraPos, lastCameraPos, 0.9f);
             }
-            else
-            {
-                cameraOffset = cameraPos;
-            }
-            mainCamera.SetPos(cameraOffset);
-            mainCamera.SetTargetPos(cameraOffset, true);
+            lastCameraPos = cameraPos;
+            mainCamera.SetPos(cameraPos);
+            mainCamera.SetTargetPos(cameraPos, true);
             mainCamera.SetDistance(0f, true);
         }
 
