@@ -325,7 +325,7 @@ namespace CM3D2.CameraUtility.Plugin
         private float oldDistance;
         private float oldFoV;
         private Quaternion oldRotation;
-        private bool oldEyetoCamToggle;
+        private int oldEyeToCamIndex;
         private Vector3 cameraOffset = Vector3.zero;
 
         //コルーチン一覧
@@ -556,8 +556,7 @@ namespace CM3D2.CameraUtility.Plugin
         {
             if (uiObject)
             {
-                //    eyetoCamToggle = false;
-                //    maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
+                //SetEyeToCamToggle(false);
                 Vector3 localPos = uiObject.transform.localPosition;
                 mainCamera.SetPos(manHead.transform.position);
                 uiObject.transform.position = manHead.transform.position;
@@ -592,8 +591,8 @@ namespace CM3D2.CameraUtility.Plugin
             if (fpsMode)
             {
                 Camera.main.fieldOfView = config.Camera.fpsModeFoV;
-                eyetoCamToggle = false;
-                maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
+                oldEyeToCamIndex = eyeToCamIndex;
+                SetEyeToCamToggle(false);
 
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
 
@@ -611,8 +610,7 @@ namespace CM3D2.CameraUtility.Plugin
                 manHead.renderer.enabled = true;
 
                 LoadCameraPos();
-                eyetoCamToggle = oldEyetoCamToggle;
-                oldEyetoCamToggle = eyetoCamToggle;
+                SetEyeToCamIndex(oldEyeToCamIndex);
             }
         }
 
@@ -794,41 +792,32 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
-        private void ChangeEyeToCam()
+        private void SetEyeToCamIndex(int index)
         {
             Assert.IsNotNull(maid);
 
-            if (eyeToCamIndex == Enum.GetNames(typeof(Maid.EyeMoveType)).Length - 1)
+            var eyeMoveTypes = (Maid.EyeMoveType[])Enum.GetValues(typeof(Maid.EyeMoveType));
+            eyeToCamIndex = index % eyeMoveTypes.Length;
+            if (eyeToCamIndex < 0)
             {
-                eyetoCamToggle = false;
-                eyeToCamIndex = 0;
+                eyeToCamIndex += eyeMoveTypes.Length;
             }
-            else
-            {
-                eyeToCamIndex++;
-                eyetoCamToggle = true;
-            }
-            maid.EyeToCamera((Maid.EyeMoveType)eyeToCamIndex, 0f);
-            Log("EyeToCam:{0}", eyeToCamIndex);
+            var eyeMoveType = eyeMoveTypes[eyeToCamIndex];
+            maid.EyeToCamera(eyeMoveType, 0f);
+            eyetoCamToggle = (eyeMoveType != Maid.EyeMoveType.無し);
+            Log("EyeToCam = {0}, EyeMoveType = [{1}]{2}", eyetoCamToggle, eyeToCamIndex, eyeMoveType);
         }
 
-        private void ToggleEyeToCam()
+        private void SetEyeToCamToggle(bool enable)
         {
             Assert.IsNotNull(maid);
 
-            eyetoCamToggle = !eyetoCamToggle;
-            if (!eyetoCamToggle)
-            {
-                maid.EyeToCamera(Maid.EyeMoveType.無し, 0f);
-                eyeToCamIndex = 0;
-                Log("EyeToCam:{0}", eyeToCamIndex);
-            }
-            else
-            {
-                maid.EyeToCamera(Maid.EyeMoveType.目と顔を向ける, 0f);
-                eyeToCamIndex = 5;
-                Log("EyeToCam:{0}", eyeToCamIndex);
-            }
+            eyetoCamToggle = enable;
+            var eyeMoveType = (eyetoCamToggle) ? Maid.EyeMoveType.目と顔を向ける : Maid.EyeMoveType.無し;
+            maid.EyeToCamera(eyeMoveType, 0f);
+            var eyeMoveTypes = (Maid.EyeMoveType[])Enum.GetValues(typeof(Maid.EyeMoveType));
+            eyeToCamIndex = Array.IndexOf(eyeMoveTypes, eyeMoveType);
+            Log("EyeToCam = {0}, EyeMoveType = [{1}]{2}", eyetoCamToggle, eyeToCamIndex, eyeMoveType);
         }
 
         private void ToggleUIVisible()
@@ -920,11 +909,11 @@ namespace CM3D2.CameraUtility.Plugin
             {
                 if (Input.GetKeyDown(Keys.eyetoCamChange))
                 {
-                    ChangeEyeToCam();
+                    SetEyeToCamIndex(eyeToCamIndex + 1);
                 }
                 if (Input.GetKeyDown(Keys.eyetoCamToggle))
                 {
-                    ToggleEyeToCam();
+                    SetEyeToCamToggle(!eyetoCamToggle);
                 }
                 yield return null;
             }
@@ -1068,3 +1057,4 @@ namespace CM3D2.CameraUtility.Plugin
 
     #endregion
 }
+
