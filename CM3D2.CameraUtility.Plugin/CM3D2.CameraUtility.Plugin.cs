@@ -46,7 +46,7 @@ namespace CM3D2.CameraUtility.Plugin
     PluginFilter("CM3D2VRx64"),
     PluginFilter("CM3D2OHx64"),
     PluginName("Camera Utility"),
-    PluginVersion("2.0.1.2-20160220")]
+    PluginVersion("2.1.1.1")]
     public class CameraUtility : PluginBase
     {
         #region Constants
@@ -227,7 +227,11 @@ namespace CM3D2.CameraUtility.Plugin
                 [Description("夜伽時一人称視点切り替え")]
                 public KeyCode cameraFPSModeToggle = KeyCode.F;
 
-                //モディファイアキー設定
+                //男切替キー設定
+                [Description("FPSの対象とする男切り替え(ループ)")]
+                public KeyCode manHeadChange = KeyCode.R;
+
+                //モディファイアキー設定 
                 [Description("低速移動モード (押下中は移動速度が減少)\n設定値: Shift, Alt, Ctrl")]
                 public ModifierKey speedDownModifier = ModifierKey.Shift;
                 [Description("初期化モード (押下中に移動キーを押すと対象の軸が初期化)\n設定値: Shift, Alt, Ctrl")]
@@ -316,6 +320,7 @@ namespace CM3D2.CameraUtility.Plugin
         private bool eyetoCamToggle = false;
         private int eyeToCamIndex = 0;
         private bool uiVisible = true;
+        private int targetManNumber = 0;
         private int sceneLevel;
 
         //状態退避変数
@@ -361,6 +366,18 @@ namespace CM3D2.CameraUtility.Plugin
             if (InitializeSceneObjects())
             {
                 StartMainCoroutines();
+            }
+            VisibleAllManHead();
+        }
+
+        private void VisibleAllManHead()
+        {
+
+            var manCount = GameMain.Instance.CharacterMgr.GetManCount();
+            for (int number = 0; number < manCount; number++)
+            {
+                var head = FindManHead(number);
+                head.renderer.enabled = true;
             }
         }
 
@@ -533,23 +550,43 @@ namespace CM3D2.CameraUtility.Plugin
             return (int)field.GetValue(mainCamera);
         }
 
-        private GameObject FindManHead()
+        private GameObject FindManHead(int manNumber)
         {
-            GameObject manExHead = GameObject.Find("__GameMain__/Character/Active/AllOffset/Man[0]");
-            Transform[] manExHeadTransforms = manExHead ? manExHead.GetComponentsInChildren<Transform>() : new Transform[0];
-            Transform[] manHedas = manExHeadTransforms.Where(trans => trans.name.IndexOf("_SM_") > -1).ToArray();
-            foreach (Transform mh in manHedas)
+            var man = GameMain.Instance.CharacterMgr.GetMan(manNumber);
+            if (!man)
+                return null;
+
+            var head = man.body0.trsHead.gameObject;
+            var mhead = FindByNameInChildren(head, "mhead");
+            if (!mhead)
+                return null;
+
+            return FindByNameInChildren(mhead, "ManHead");
+        }
+
+        private GameObject FindByNameInChildren(GameObject parent, string name)
+        {
+            foreach (Transform transform in parent.transform)
             {
-                GameObject smManHead = mh.gameObject;
-                foreach (Transform smmh in smManHead.transform)
+                if (transform.name.IndexOf(name) > -1)
                 {
-                    if (smmh.name.IndexOf("ManHead") > -1)
-                    {
-                        return smmh.gameObject;
-                    }
+                    return transform.gameObject;
                 }
             }
             return null;
+        }
+
+        private int GetVisibleManCount()
+        {
+            var characterMgr = GameMain.Instance.CharacterMgr;
+            var manCount = characterMgr.GetManCount();
+            for (int number = 0; number < manCount; number++)
+            {
+                var man = characterMgr.GetMan(number);
+                if (!man.Visible)
+                    return number;
+            }
+            return manCount;
         }
 
         private void OVRToggleFirstPersonCameraMode()
@@ -613,6 +650,36 @@ namespace CM3D2.CameraUtility.Plugin
                 LoadCameraPos();
                 eyetoCamToggle = oldEyetoCamToggle;
                 oldEyetoCamToggle = eyetoCamToggle;
+            }
+        }
+
+        private void FindAndChangeManHead(int manNumber)
+        {
+            var manCount = GetVisibleManCount();
+            if (manNumber < 0 || manCount <= manNumber)
+                return;
+
+            var newManHead = FindManHead(manNumber);
+            if (newManHead)
+                ChangeManHead(newManHead);
+        }
+
+        private void ChangeManHead(GameObject newManHead)
+        {
+            Assert.IsNotNull(mainCameraTransform);
+
+            if (fpsMode)
+            {
+                if (manHead)
+                    manHead.renderer.enabled = true;
+
+                manHead = newManHead;
+                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
+                manHead.renderer.enabled = false;
+            }
+            else
+            {
+                manHead = newManHead;
             }
         }
 
@@ -853,7 +920,7 @@ namespace CM3D2.CameraUtility.Plugin
         {
             while (!manHead)
             {
-                manHead = FindManHead();
+                FindAndChangeManHead(targetManNumber);
                 yield return new WaitForSeconds(stateCheckInterval);
             }
             while (true)
@@ -866,6 +933,11 @@ namespace CM3D2.CameraUtility.Plugin
                 {
                     OVRToggleFirstPersonCameraMode();
                 }
+                if (Input.GetKeyDown(Keys.manHeadChange) || IsIllegalTargetMan())
+                {
+                    IncreseTargetManNumber();
+                    FindAndChangeManHead(targetManNumber);
+                }
                 yield return null;
             }
         }
@@ -874,7 +946,7 @@ namespace CM3D2.CameraUtility.Plugin
         {
             while (!manHead)
             {
-                manHead = FindManHead();
+                FindAndChangeManHead(targetManNumber);
                 yield return new WaitForSeconds(stateCheckInterval);
             }
             while (true)
@@ -887,6 +959,11 @@ namespace CM3D2.CameraUtility.Plugin
                 {
                     ToggleFirstPersonCameraMode();
                 }
+                if (Input.GetKeyDown(Keys.manHeadChange) || IsIllegalTargetMan())
+                {
+                    IncreseTargetManNumber();
+                     FindAndChangeManHead(targetManNumber);
+                }
                 if (fpsMode)
                 {
                     UpdateFirstPersonCamera();
@@ -895,6 +972,23 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
+        private void IncreseTargetManNumber()
+        {
+            targetManNumber = targetManNumber + 1;
+            var visibleManCount = GetVisibleManCount();
+            if (visibleManCount <= targetManNumber)
+                targetManNumber = 0;
+            Log("Change ManHeadNumber: " + targetManNumber);
+        }
+
+        private bool IsIllegalTargetMan()
+        {
+            var visibleManCount = GetVisibleManCount();
+            if (visibleManCount == 0)
+                return false;
+            return visibleManCount <= targetManNumber;
+        }
+        
         private IEnumerator FloorMoverCoroutine()
         {
             while (true)
