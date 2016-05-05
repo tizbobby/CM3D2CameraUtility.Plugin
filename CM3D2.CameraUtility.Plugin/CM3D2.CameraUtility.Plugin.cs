@@ -1,35 +1,4 @@
-﻿// CM3D2CameraUtility.Plugin v2.0.1.2 改変の改変（非公式)
-// 改変元 したらば改造スレその5 >>693
-// http://pastebin.com/NxzuFaUe
-
-// 20160220
-// ・Chu-B Lip 対応
-// ・回想モードでのFPSモード有効化
-
-// 20160103
-// ・FPSモードでのカメラブレの補正機能追加
-// ・VIPでのFPSモード有効化
-// ・UIパネルを非表示にできるシーンの拡張
-// 　(シーンレベル15)
-
-// ■カメラブレ補正について
-// Fキー(デフォルトの場合)を一回押下でオリジナルのFPSモード、もう一回押下でブレ補正モード。
-// 再度押下でFPSモード解除。
-
-// FPSモードの視点は男の頭の位置にカメラがセットされますが、
-// 男の動きが激しい体位では視線がガクガクと大きく揺れます。
-// 新しく追加したブレ補正モードではこの揺れを小さく抑えます。
-// ただし男の目の位置とカメラ位置が一致しなくなるので、男の透明度を上げていると
-// 体位によっては男の胴体の一部がちらちらと映り込みます。
-// これの改善のため首の描画を消そうと思いましたが、男モデルは「頭部」「体」の2種類しか
-// レンダリングされていないようで無理っぽかった。
-// 気になる人は男の透明度を下げてください。
-
-
-// CM3D2CameraUtility.Plugin v2.0.1.2 改変（非公式)
-// Original by k8PzhOFo0 (https://github.com/k8PzhOFo0/CM3D2CameraUtility.Plugin)
-
-using System;
+﻿using System;
 using System.Collections;
 using System.Collections.Generic;
 using System.ComponentModel;
@@ -46,7 +15,7 @@ namespace CM3D2.CameraUtility.Plugin
     PluginFilter("CM3D2VRx64"),
     PluginFilter("CM3D2OHx64"),
     PluginName("Camera Utility"),
-    PluginVersion("2.1.1.1")]
+    PluginVersion("2.2.0.0")]
     public class CameraUtility : PluginBase
     {
         #region Constants

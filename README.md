@@ -119,7 +119,7 @@ VRモードで追従すると酔いの原因となるので主人公の視点位
 3. ゲームを起動します。
    ゲームと共に起動するコンソールに
 
-        Loaded Plugin: 'Camera Utility 2.0.1.1'
+        Loaded Plugin: 'Camera Utility 2.2.0.0'
         ...
         Adding Component: 'CameraUtility'
 
@@ -164,6 +164,10 @@ Sybaris の AutoCompile に対応しています。
 
 
 ## 変更履歴
+
+* 2.2.0.0
+  Author: [qucucu](https://github.com/qucucu)
+  * 男切り替え機能を追加
 
 * 2.1.1.0
   * FPSモードのクラッシュを修正
