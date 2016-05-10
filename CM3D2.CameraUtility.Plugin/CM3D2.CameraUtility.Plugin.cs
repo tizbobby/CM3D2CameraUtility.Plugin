@@ -14,6 +14,8 @@ namespace CM3D2.CameraUtility.Plugin
     PluginFilter("CM3D2x86"),
     PluginFilter("CM3D2VRx64"),
     PluginFilter("CM3D2OHx64"),
+    PluginFilter("CM3D2OHx86"),
+    PluginFilter("CM3D2OHVRx64"),
     PluginName("Camera Utility"),
     PluginVersion("2.2.0.0")]
     public class CameraUtility : PluginBase
@@ -313,8 +315,8 @@ namespace CM3D2.CameraUtility.Plugin
             GameObject.DontDestroyOnLoad(this);
 
             string path = Application.dataPath;
-            isChuBLip = path.Contains("CM3D2OHx64");
-            isOVR = path.Contains("CM3D2VRx64");
+            isChuBLip = path.Contains("CM3D2OH");
+            isOVR = path.Contains("VRx64");
 
             config = CameraUtilityConfig.FromPreferences(Preferences);
             config.SavePreferences();
