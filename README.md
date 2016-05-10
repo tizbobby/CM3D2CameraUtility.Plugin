@@ -143,7 +143,6 @@ DLL ファイル名が変更されています。
 * CM3D2CamerUtility.Plugin.dll : 1.0.0.0 までのファイル名
 
 
-
 ## ソースについて
 
 ソースのビルドに必要な追加の参照設定は以下になります。
@@ -152,14 +151,21 @@ DLL ファイル名が変更されています。
 * UnityInjector.dll
 * Assembly-CSharp.dll
 
+**アップデータ Ver.1.30** より Unity のバージョンが変わりました。
+ビルド時の UnityEngine.dll によって対応バージョンが決定するためご注意ください。
+以前のバージョンでビルドされた DLL は互換性がありません。
+
 
 #### AutoCompile (Sybaris)
 
 Sybaris の AutoCompile に対応しています。
 
-1. CM3D2.CameraUtility.Plugin.cs を Sybaris\Plugins\UnityInjector\AutoCompile にコピーします。
+1. CM3D2.CameraUtility.Plugin.cs を `Sybaris\Plugins\UnityInjector\AutoCompile` にコピーします。
+  - 既に `Sybaris\Plugins\UnityInjector\CM3D2.CameraUtility.Plugin.dll` が存在する場合は削除します。
 2. ゲームを起動します。
-   Sybaris\Plugins\UnityInjector に DLL が生成されます。
+   `Sybaris\Plugins\UnityInjector` に DLL が生成されます。
+
+*DLL を再生成する場合、先に古い DLL を削除するのを忘れないようにしてください。*
 
 
 
