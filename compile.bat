@@ -4,7 +4,6 @@ pushd "%~pd0"
 
 if "%CM3D2_PLATFORM%" == "" set CM3D2_PLATFORM=x64
 if "%CM3D2_MOD_DIR%" == ""  set CM3D2_MOD_DIR=C:\Games\KISS\CM3D2_MOD
-set REIPATCHER_DIR=%CM3D2_MOD_DIR%\ReiPatcher
 set UNITY_INJECTOR_DIR=%CM3D2_MOD_DIR%\UnityInjector
 set CM3D2_MOD_MANAGED_DIR=%CM3D2_MOD_DIR%\CM3D2%CM3D2_PLATFORM%_Data\Managed
 
@@ -24,19 +23,18 @@ set SRCS=^
   CM3D2.CameraUtility.Plugin\CM3D2.CameraUtility.Plugin.cs
 set CSOPT=/optimize+
 set CSLIB=^
-  /lib:"%REIPATCHER_DIR%" ^
-  /r:ReiPatcher.exe ^
-  /r:mono.cecil.dll ^
-  /r:mono.cecil.rocks.dll ^
   /lib:"%CM3D2_MOD_MANAGED_DIR%" ^
   /r:UnityInjector.dll ^
   /r:UnityEngine.dll ^
   /r:Assembly-CSharp.dll ^
   /r:Assembly-CSharp-firstpass.dll ^
   /r:ExIni.dll
-set OUTDIR=%UNITY_INJECTOR_DIR%
+set OUTDIR=.\
 
-%CSC% %CSOPT% %TYPE% %CSLIB% /out:%OUTDIR%\%TARGET% %SRCS% || exit /b 1
+
+if not exist "%OUTDIR%" mkdir "%OUTDIR%"
+%CSC% /nologo %CSOPT% %TYPE% %CSLIB% /out:"%OUTDIR%\%TARGET%" %SRCS% || goto :eof
+copy "%OUTDIR%\%TARGET%" "%UNITY_INJECTOR_DIR%" || goto :eof
 
 
 popd
