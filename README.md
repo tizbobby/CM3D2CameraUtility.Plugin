@@ -171,10 +171,10 @@ Sybaris の AutoCompile に対応しています。
 
 ## 変更履歴
 
-* 2.3.3.0
+* 2.3.4.0
   * NullReferenceException を修正
   * Unity 5.3.4p4 対応
-  * VR で男の頭が消えないバグを修正
+  * VR 対応修正
 
 * 2.3.0.0
   * Chu-B Lip + VR 対応
