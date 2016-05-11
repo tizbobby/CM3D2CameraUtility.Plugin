@@ -17,7 +17,7 @@ namespace CM3D2.CameraUtility.Plugin
     PluginFilter("CM3D2OHx86"),
     PluginFilter("CM3D2OHVRx64"),
     PluginName("Camera Utility"),
-    PluginVersion("2.3.1.0")]
+    PluginVersion("2.3.2.0")]
     public class CameraUtility : PluginBase
     {
         #region Constants
