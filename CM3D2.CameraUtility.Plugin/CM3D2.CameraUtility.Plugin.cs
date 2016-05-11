@@ -553,6 +553,7 @@ namespace CM3D2.CameraUtility.Plugin
         {
             if (uiObject && manHead)
             {
+                fpsMode = true;
                 //SetEyeToCamToggle(false);
                 Vector3 localPos = uiObject.transform.localPosition;
                 mainCamera.SetPos(manHead.transform.position);
@@ -959,6 +960,7 @@ namespace CM3D2.CameraUtility.Plugin
                 {
                     IncreseTargetManNumber();
                     FindAndChangeManHead(targetManNumber);
+                    OVRToggleFirstPersonCameraMode();
                 }
                 yield return null;
             }
