@@ -535,6 +535,15 @@ namespace CM3D2.CameraUtility.Plugin
             return null;
         }
 
+        private void SetRendererEnabled(GameObject obj, bool enabled)
+        {
+            var renderer = obj.GetComponent<Renderer>();
+            if (renderer)
+            {
+                renderer.enabled = enabled;
+            }
+        }
+
         #endregion
 
         #region Methods for FirstPersonCamera
@@ -592,14 +601,14 @@ namespace CM3D2.CameraUtility.Plugin
                 // setup camera
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
                 // hide ManHead
-                manHead.renderer.enabled = false;
+                SetRendererEnabled(manHead, false);
             }
             else
             {
                 UpdateFirstPersonCamera();
                 LoadCameraPos();
                 SetEyeToCamIndex(oldEyeToCamIndex);
-                manHead.renderer.enabled = true;
+                SetRendererEnabled(manHead, true);
             }
         }
 
@@ -655,12 +664,12 @@ namespace CM3D2.CameraUtility.Plugin
             {
                 if (manHead)
                 {
-                    manHead.renderer.enabled = true;
+                    SetRendererEnabled(manHead, true);
                 }
 
                 manHead = newManHead;
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
-                manHead.renderer.enabled = false;
+                SetRendererEnabled(manHead, false);
             }
             else
             {
