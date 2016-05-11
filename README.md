@@ -171,6 +171,10 @@ Sybaris の AutoCompile に対応しています。
 
 ## 変更履歴
 
+* 2.3.1.0
+  * NullReferenceException を修正
+  * Unity 5.3.4p4 対応
+
 * 2.3.0.0
   * Chu-B Lip + VR 対応
 
