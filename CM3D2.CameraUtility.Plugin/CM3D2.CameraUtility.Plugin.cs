@@ -537,6 +537,7 @@ namespace CM3D2.CameraUtility.Plugin
 
         private void SetRendererEnabled(GameObject obj, bool enabled)
         {
+            Assert.IsNotNull(obj);
             var renderer = obj.GetComponent<Renderer>();
             if (renderer)
             {
@@ -550,7 +551,7 @@ namespace CM3D2.CameraUtility.Plugin
 
         private void OVRToggleFirstPersonCameraMode()
         {
-            if (uiObject)
+            if (uiObject && manHead)
             {
                 //SetEyeToCamToggle(false);
                 Vector3 localPos = uiObject.transform.localPosition;
@@ -562,8 +563,6 @@ namespace CM3D2.CameraUtility.Plugin
 
         private void ToggleFirstPersonCameraMode()
         {
-            Assert.IsNotNull(manHead);
-
             if (fpsShakeCorrection)
             {
                 fpsShakeCorrection = false;
@@ -659,6 +658,7 @@ namespace CM3D2.CameraUtility.Plugin
         private void ChangeManHead(GameObject newManHead)
         {
             Assert.IsNotNull(mainCameraTransform);
+            Assert.IsNotNull(newManHead);
 
             if (fpsMode)
             {
