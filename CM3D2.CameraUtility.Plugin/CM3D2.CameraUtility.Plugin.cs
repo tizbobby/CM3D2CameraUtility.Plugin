@@ -558,6 +558,7 @@ namespace CM3D2.CameraUtility.Plugin
                 mainCamera.SetPos(manHead.transform.position);
                 uiObject.transform.position = manHead.transform.position;
                 uiObject.transform.localPosition = localPos;
+                SetRendererEnabled(manHead, false);
             }
         }
 
