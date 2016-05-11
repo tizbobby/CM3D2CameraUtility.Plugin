@@ -341,19 +341,6 @@ namespace CM3D2.CameraUtility.Plugin
             VisibleAllManHead();
         }
 
-        private void VisibleAllManHead()
-        {
-            var manCount = GameMain.Instance.CharacterMgr.GetManCount();
-            for (int number = 0; number < manCount; number++)
-            {
-                var head = FindManHead(number);
-                if (head != null)
-                {
-                    head.renderer.enabled = true;
-                }
-            }
-        }
-
         #endregion
         #region Properties
 
@@ -376,6 +363,8 @@ namespace CM3D2.CameraUtility.Plugin
 
         #endregion
         #region Private Methods
+
+        #region Methods for Main
 
         private bool InitializeSceneObjects()
         {
@@ -467,6 +456,15 @@ namespace CM3D2.CameraUtility.Plugin
             mainCoroutines.Clear();
         }
 
+        #endregion
+
+        #region Methods for Misc
+
+        private void Log(string format, params object[] args)
+        {
+            Debug.Log(Name + ": " + string.Format(format, args));
+        }
+
         private bool IsModKeyPressing(ModifierKey key)
         {
             switch (key)
@@ -523,20 +521,6 @@ namespace CM3D2.CameraUtility.Plugin
             return (int)field.GetValue(mainCamera);
         }
 
-        private GameObject FindManHead(int manNumber)
-        {
-            var man = GameMain.Instance.CharacterMgr.GetMan(manNumber);
-            if (!man)
-                return null;
-
-            var head = man.body0.trsHead.gameObject;
-            var mhead = FindByNameInChildren(head, "mhead");
-            if (!mhead)
-                return null;
-
-            return FindByNameInChildren(mhead, "ManHead");
-        }
-
         private GameObject FindByNameInChildren(GameObject parent, string name)
         {
             foreach (Transform transform in parent.transform)
@@ -549,18 +533,9 @@ namespace CM3D2.CameraUtility.Plugin
             return null;
         }
 
-        private int GetVisibleManCount()
-        {
-            var characterMgr = GameMain.Instance.CharacterMgr;
-            var manCount = characterMgr.GetManCount();
-            for (int number = 0; number < manCount; number++)
-            {
-                var man = characterMgr.GetMan(number);
-                if (!man.Visible)
-                    return number;
-            }
-            return manCount;
-        }
+        #endregion
+
+        #region Methods for FirstPersonCamera
 
         private void OVRToggleFirstPersonCameraMode()
         {
@@ -626,6 +601,38 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
+        private void UpdateFirstPersonCamera()
+        {
+            Assert.IsNotNull(manHead);
+            Assert.IsNotNull(mainCamera);
+            Assert.IsNotNull(mainCameraTransform);
+
+            Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
+            if (oldTargetPos != cameraTargetPosFromScript)
+            {
+                Log("Position Changed!");
+                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
+                oldTargetPos = cameraTargetPosFromScript;
+            }
+
+            Vector3 cameraPos = manHead.transform.position
+                + manHead.transform.up * config.Camera.fpsOffsetUp
+                + manHead.transform.right * config.Camera.fpsOffsetRight
+                + manHead.transform.forward * config.Camera.fpsOffsetForward;
+            if (fpsShakeCorrection)
+            {
+                cameraPos = Vector3.Lerp(cameraPos, lastCameraPos, 0.9f);
+            }
+            lastCameraPos = cameraPos;
+            mainCamera.SetPos(cameraPos);
+            mainCamera.SetTargetPos(cameraPos, true);
+            mainCamera.SetDistance(0f, true);
+        }
+
+        #endregion
+
+        #region Methods for ManHead
+
         private void FindAndChangeManHead(int manNumber)
         {
             var manCount = GetVisibleManCount();
@@ -656,33 +663,64 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
-        private void UpdateFirstPersonCamera()
+        private GameObject FindManHead(int manNumber)
         {
-            Assert.IsNotNull(manHead);
-            Assert.IsNotNull(mainCamera);
-            Assert.IsNotNull(mainCameraTransform);
+            var man = GameMain.Instance.CharacterMgr.GetMan(manNumber);
+            if (!man)
+                return null;
 
-            Vector3 cameraTargetPosFromScript = GetYotogiPlayPosition();
-            if (oldTargetPos != cameraTargetPosFromScript)
-            {
-                Log("Position Changed!");
-                mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
-                oldTargetPos = cameraTargetPosFromScript;
-            }
+            var head = man.body0.trsHead.gameObject;
+            var mhead = FindByNameInChildren(head, "mhead");
+            if (!mhead)
+                return null;
 
-            Vector3 cameraPos = manHead.transform.position
-                + manHead.transform.up * config.Camera.fpsOffsetUp
-                + manHead.transform.right * config.Camera.fpsOffsetRight
-                + manHead.transform.forward * config.Camera.fpsOffsetForward;
-            if (fpsShakeCorrection)
-            {
-                cameraPos = Vector3.Lerp(cameraPos, lastCameraPos, 0.9f);
-            }
-            lastCameraPos = cameraPos;
-            mainCamera.SetPos(cameraPos);
-            mainCamera.SetTargetPos(cameraPos, true);
-            mainCamera.SetDistance(0f, true);
+            return FindByNameInChildren(mhead, "ManHead");
         }
+
+        private int GetVisibleManCount()
+        {
+            var characterMgr = GameMain.Instance.CharacterMgr;
+            var manCount = characterMgr.GetManCount();
+            for (int number = 0; number < manCount; number++)
+            {
+                var man = characterMgr.GetMan(number);
+                if (!man.Visible)
+                    return number;
+            }
+            return manCount;
+        }
+
+        private void VisibleAllManHead()
+        {
+            var manCount = GameMain.Instance.CharacterMgr.GetManCount();
+            for (int number = 0; number < manCount; number++)
+            {
+                var head = FindManHead(number);
+                if (head != null)
+                    head.renderer.enabled = true;
+            }
+        }
+
+        private void IncreseTargetManNumber()
+        {
+            targetManNumber = targetManNumber + 1;
+            var visibleManCount = GetVisibleManCount();
+            if (visibleManCount <= targetManNumber)
+                targetManNumber = 0;
+            Log("Change ManHeadNumber: " + targetManNumber);
+        }
+
+        private bool IsIllegalTargetMan()
+        {
+            var visibleManCount = GetVisibleManCount();
+            if (visibleManCount == 0)
+                return false;
+            return visibleManCount <= targetManNumber;
+        }
+
+        #endregion
+
+        #region Methods for ExtendedCameraHandle
 
         private void UpdateCameraFoV()
         {
@@ -736,6 +774,10 @@ namespace CM3D2.CameraUtility.Plugin
                 mainCameraTransform.Rotate(0, 0, -rotateSpeed);
             }
         }
+
+        #endregion
+
+        #region Methods for FloorMover
 
         private void UpdateBackgroudPosition()
         {
@@ -831,6 +873,10 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
+        #endregion
+
+        #region Methods for EyeToCam
+
         private void SetEyeToCamIndex(int index)
         {
             Assert.IsNotNull(maid);
@@ -859,6 +905,10 @@ namespace CM3D2.CameraUtility.Plugin
             Log("EyeToCam = {0}, EyeMoveType = [{1}]{2}", eyetoCamToggle, eyeToCamIndex, eyeMoveType);
         }
 
+        #endregion
+
+        #region Methods for HideUI
+
         private void ToggleUIVisible()
         {
             uiVisible = !uiVisible;
@@ -869,10 +919,7 @@ namespace CM3D2.CameraUtility.Plugin
             }
         }
 
-        private void Log(string format, params object[] args)
-        {
-            Debug.Log(Name + ": " + string.Format(format, args));
-        }
+        #endregion
 
         #endregion
         #region Coroutines
@@ -931,23 +978,6 @@ namespace CM3D2.CameraUtility.Plugin
                 }
                 yield return null;
             }
-        }
-
-        private void IncreseTargetManNumber()
-        {
-            targetManNumber = targetManNumber + 1;
-            var visibleManCount = GetVisibleManCount();
-            if (visibleManCount <= targetManNumber)
-                targetManNumber = 0;
-            Log("Change ManHeadNumber: " + targetManNumber);
-        }
-
-        private bool IsIllegalTargetMan()
-        {
-            var visibleManCount = GetVisibleManCount();
-            if (visibleManCount == 0)
-                return false;
-            return visibleManCount <= targetManNumber;
         }
 
         private IEnumerator FloorMoverCoroutine()
