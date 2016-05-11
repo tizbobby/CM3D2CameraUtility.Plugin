@@ -523,6 +523,8 @@ namespace CM3D2.CameraUtility.Plugin
 
         private GameObject FindByNameInChildren(GameObject parent, string name)
         {
+            Assert.IsNotNull(parent);
+            Assert.IsNotNull(name);
             foreach (Transform transform in parent.transform)
             {
                 if (transform.name.IndexOf(name) > -1)
@@ -669,12 +671,11 @@ namespace CM3D2.CameraUtility.Plugin
         private GameObject FindManHead(int manNumber)
         {
             var man = GameMain.Instance.CharacterMgr.GetMan(manNumber);
-            if (!man) return null;
-
+            if (!man || !man.body0 || !man.body0.trsHead) return null;
             var head = man.body0.trsHead.gameObject;
+            if (!head) return null;
             var mhead = FindByNameInChildren(head, "mhead");
             if (!mhead) return null;
-
             return FindByNameInChildren(mhead, "ManHead");
         }
 
