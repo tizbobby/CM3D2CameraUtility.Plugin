@@ -636,12 +636,13 @@ namespace CM3D2.CameraUtility.Plugin
         private void FindAndChangeManHead(int manNumber)
         {
             var manCount = GetVisibleManCount();
-            if (manNumber < 0 || manCount <= manNumber)
-                return;
+            if (manNumber < 0 || manCount <= manNumber) return;
 
             var newManHead = FindManHead(manNumber);
             if (newManHead)
+            {
                 ChangeManHead(newManHead);
+            }
         }
 
         private void ChangeManHead(GameObject newManHead)
@@ -651,7 +652,9 @@ namespace CM3D2.CameraUtility.Plugin
             if (fpsMode)
             {
                 if (manHead)
+                {
                     manHead.renderer.enabled = true;
+                }
 
                 manHead = newManHead;
                 mainCameraTransform.rotation = Quaternion.LookRotation(-manHead.transform.up);
@@ -666,13 +669,11 @@ namespace CM3D2.CameraUtility.Plugin
         private GameObject FindManHead(int manNumber)
         {
             var man = GameMain.Instance.CharacterMgr.GetMan(manNumber);
-            if (!man)
-                return null;
+            if (!man) return null;
 
             var head = man.body0.trsHead.gameObject;
             var mhead = FindByNameInChildren(head, "mhead");
-            if (!mhead)
-                return null;
+            if (!mhead) return null;
 
             return FindByNameInChildren(mhead, "ManHead");
         }
@@ -684,8 +685,7 @@ namespace CM3D2.CameraUtility.Plugin
             for (int number = 0; number < manCount; number++)
             {
                 var man = characterMgr.GetMan(number);
-                if (!man.Visible)
-                    return number;
+                if (!man.Visible) return number;
             }
             return manCount;
         }
@@ -697,7 +697,9 @@ namespace CM3D2.CameraUtility.Plugin
             {
                 var head = FindManHead(number);
                 if (head != null)
+                {
                     head.renderer.enabled = true;
+                }
             }
         }
 
@@ -706,15 +708,16 @@ namespace CM3D2.CameraUtility.Plugin
             targetManNumber = targetManNumber + 1;
             var visibleManCount = GetVisibleManCount();
             if (visibleManCount <= targetManNumber)
+            {
                 targetManNumber = 0;
+            }
             Log("Change ManHeadNumber: " + targetManNumber);
         }
 
         private bool IsIllegalTargetMan()
         {
             var visibleManCount = GetVisibleManCount();
-            if (visibleManCount == 0)
-                return false;
+            if (visibleManCount == 0) return false;
             return visibleManCount <= targetManNumber;
         }
 
