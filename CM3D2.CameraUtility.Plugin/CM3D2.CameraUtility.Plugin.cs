@@ -708,7 +708,7 @@ namespace CM3D2.CameraUtility.Plugin
                 var head = FindManHead(number);
                 if (head != null)
                 {
-                    head.renderer.enabled = true;
+                    SetRendererEnabled(head, true);
                 }
             }
         }
