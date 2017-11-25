@@ -1,115 +1,103 @@
 # CM3D2.CameraUtility.Plugin
 
-CM3D2のカメラ機能を拡張します。その他主に撮影用の機能を追加します。
-ロール回転、パース変更、背景位置変更、一人称視点、こっち見て機能、操作パネル消去の機能を加えます。
-キーボード操作のみの対応です。
+Extends the camera function of CM3D2. Mainly adds functions for screenshots.
+Adds roll rotation, parse change, background position change, first person viewpoint, Looking at functions, Erase operation panel.
+It corresponds to only keyboard operation.
 
-*注意* 表中のキーは日本語キーボードでの表記です。
+* Attention The keys in the table is written in Japanese keyboard.
 
+## Functions / operation method introduction
 
+### Camera operation (roll rotation, parsing change) * VR not supported *
 
-## 機能・操作方法紹介
-
-### カメラ操作 (ロール回転、パース変更) *VR非対応*
-
-| 機能          | キー   |
-|:-------------:|:------:|
-| 視野:拡張     | ] (む) |
-| 視野:縮小     | ; (れ) |
-| 視野初期化    | : (け) |
-| ロール回転:左 | . (る) |
-| ロール回転:右 | \ (め) |
-| ロール初期化  | / (ろ) |
-
-メインカメラのパース(視野、FoV)変更、およびロール回転機能です。
-「け」「め」がそれぞれ初期化です。
-キーの対応はIllusion系のゲームに合わせています。
-
+| Action       | Key |
+|:------------:|:---:|
+| FOV up       | ]   |
+| FOV down     | ;   |
+| Reset FOV    | :   |
+| Roll left    | .   |
+| Roll right   | \   |
+| Reset roll   | /   |
 
 ### 背景位置変更
 
-| 機能          | キー | VR キー  |
-|:-------------:|:----:|:--------:|
-| 移動:前       | ↑   | I        |
-| 移動:後       | ↓   | K        |
-| 移動:左       | ←   | J        |
-| 移動:右       | →   | L        |
-| 移動:上       | PgUp | 0 (zero) |
-| 移動:下       | PgDn | P        |
-| 水平回転:左   | Del  | U        |
-| 水平回転:右   | End  | O        |
-| ロール回転:左 | Ins  | 8        |
-| ロール回転:右 | Home | 9        |
-| 初期化        | BS   | BS       |
+| Action        | Key   |  VR Key  |
+|:-------------:|:-----:|:--------:|
+| Move forward  | ↑     | I        |
+| Move back     | ↓     | K        |
+| Move left     | ←     | J        |
+| Move right    | →     | L        |
+| Move up       | PgUp  | 0 (zero) |
+| Move down     | PgDn  | P        |
+| Roll left     | Del   | U        |
+| Roll right    | End   | O        |
+| Turn left     | Ins   | 8        |
+| Turn right    | Home  | 9        |
+| Reset camera  | BkSpc | BkSpc    |
 
-`Shift` キーを押しながらだと移動距離が1/10になります。微調整にどうぞ。
-`Alt` キーを押しながら各キーを押すとそれぞれの操作分が初期化されます。
-`BS` キーを押すと移動関係をまとめて初期化します。
-背景が変更されると移動は初期化されます。
-ロール回転を使うと操作が混乱しやすいので極力最後に使うことをお薦めします。
-VR版はゲーム内で使われているキーと一部重複するため操作が変わります。
+Hold down the `Shift` key and the moving distance will be 1/10. Please fine-tune.
+Hold down the `Alt` key and press each key to initialize each operation.
+Pressing the `Backspace` key resets the camera movement.
+Movement is initialized when the background is changed.
+It is recommended to use it last as much as possible because the operation is confusing when using roll rotation.
+Since the VR version partially overlaps with the mod's keys, they've been changed.
 
+### Look at this function
 
-### こっち見て機能
+| Action                          | Key |
+|:-------------------------------:|:---:|
+| Toggle "maid faces camera"      |  G  |
+| Change "maid faces camera" mode |  T  |
 
-| 機能                     | キー |
-|:------------------------:|:----:|
-| こっち見て／通常切り替え | G    |
-| 視線及び顔の向き切り替え | T    |
+* Gaze direction and face orientation type
+   * None = 0
+   * Ignore = 1
+   * Turning face = 2
+   * Move only the face = 3
+   * Distracting face = 4
+   * Turn your eyes and face = 5
+   * Turn only eyes = 6
+   * Distract only eyes = 7
 
-* 視線及び顔の向き種別
-  * 無し = 0
-  * 無視する = 1
-  * 顔を向ける = 2
-  * 顔だけ動かす = 3
-  * 顔をそらす = 4
-  * 目と顔を向ける = 5
-  * 目だけ向ける = 6
-  * 目だけそらす = 7
-
-「T」キーで上記の8種を順に切り替えます。切り替え時の番号はコンソールに表示されます。
-「G」キーは上記の表での 0 および 5 の切り替えです。
-一人称視点時に "こっち見て" を使うと角度制限で見てくれないことがあるので
-自動的に「無し」の状態になりますが、そこから更に変更することは可能です。
-
-
-### 夜伽時一人称視点 *VR一部対応*
-
-| 機能               | キー |
-|:------------------:|:----:|
-| 一人称視点切り替え | F    |
-| 男切り替え         | R    |
-
-夜伽時に「F」キーで主人公らしき物体の視点に切り替えます。
-もう一度押すとブレ補正モードに切り替えます。
-さらにもう一度押すと元に戻ります。
-主人公が表示されないシーンでは妙な場所に飛ぶので手動で解除してください。
-「R」キーで主人公らしき物体を順に切り替えます。
-男変更MODへの対応のため一人称視点時には男の頭が消えます。
-VRモードで追従すると酔いの原因となるので主人公の視点位置に移動のみします。
-体勢が変わっても追従しないので適時キーを押してください。
+Use the "T" key to cycle through the 8 types above. The switching number is displayed on the console.
+"G" key is toggle between 0 and 5 in the above table.
+When using "look here" at the first person viewpoint, there are things that you will not see by angle restriction
+It automatically becomes "None", but you can further change it from there.
 
 
-### パネル表示切り替え *VR非対応*
+### Night-time camera controls *Not in VR*
 
-| 機能               | キー |
-|:------------------:|:----:|
-| パネル表示切り替え | Tab  |
+| Action                     | Key |
+|:--------------------------:|:---:|
+| Toggle first person mode   |  F  |
+| Switch first person target |  R  |
 
-エディット及び夜伽時にステータスや操作パネルを消します。
-もう一度押すと表示します。
-各パネルには折りたたみ機能がありますが、こちらは一括で消し去ります。
+Switch to the viewpoint of a player-like object with the "F" key during Night Service.
+Press it again to switch to the blur correction mode.
+Press it again to restore it.
+In the scene where the hero is not displayed, it will fly to a strange place so please manually cancel it.
+Use the "R" key to switch objects that seem to be the main character in order.
+The man's head disappears at the time of first person viewpoint to correspond to MOD change MOD.
+Since it will cause sickness if you follow in VR mode, I will only move to the position of the hero's point of view.
+Even if the position changes, do not follow, so press the key as appropriate.
 
+### UI Controls *Not in VR*
 
-### 設定ファイル
+| Action    | Key |
+|:---------:|:---:|
+| Toggle UI | Tab |
 
-ゲームを起動すると UnityInjector\Config\CameraUtility.ini が生成されます。
-各操作キーの変更、移動速度などの数値の変更が可能です。
-詳細は Ini ファイルの中を参照してください。
+Erase the status and operation panel at editing and night scattering.
+Press it again to display it.
+Each panel has a folding function, but it is erased all at once.
 
+### Settings File
 
+When you start the game, `UnityInjector\Config\CameraUtility.ini` is generated.
+Change of each operation key, numerical value such as moving speed etc. are possible.
+For details, refer to the Ini file.
 
-## 使い方
+## How to install
 
 ### ReiPatcher + UnityInjector
 
@@ -141,7 +129,6 @@ DLL ファイル名が変更されています。
 * CM3D2.CameraUtility.Plugin.dll : 現在のファイル名
 * CM3D2CameraUtility.Plugin.dll : 2.0.1.2 までのファイル名
 * CM3D2CamerUtility.Plugin.dll : 1.0.0.0 までのファイル名
-
 
 ## ソースについて
 
